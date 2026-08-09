@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1072">
+<title>Kindle 信息仪表盘</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+    color: #000000;
+  }
+  body {
+    width: 1072px;
+    font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  .header {
+    padding: 24px 30px 14px;
+    border-bottom: 4px solid #000;
+    text-align: center;
+  }
+  #clock {
+    font-size: 120px;
+    font-weight: bold;
+    letter-spacing: 6px;
+    line-height: 1.1;
+  }
+  #date {
+    font-size: 44px;
+    margin-top: 4px;
+  }
+  table.grid {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  td.col {
+    width: 50%;
+    vertical-align: top;
+  }
+  .panel {
+    border: 2px solid #000;
+    margin: 16px 12px;
+    padding: 14px 18px;
+    min-height: 520px;
+  }
+  h2 {
+    font-size: 36px;
+    margin: 0 0 10px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #000;
+  }
+  .panel p, .panel li {
+    font-size: 30px;
+    line-height: 1.45;
+  }
+  .weather-main {
+    font-size: 44px;
+    font-weight: bold;
+    margin: 8px 0 14px;
+  }
+  .weather-detail {
+    font-size: 28px;
+    color: #222;
+  }
+  #forecast {
+    margin-top: 12px;
+    font-size: 28px;
+    line-height: 1.6;
+    white-space: pre-line;
+  }
+  ul.news {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  ul.news li {
+    padding: 10px 0;
+    border-bottom: 1px solid #999;
+  }
+  ul.news li:last-child {
+    border-bottom: none;
+  }
+  .news-time {
+    color: #333;
+    font-size: 24px;
+  }
+  .crypto {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .crypto td {
+    width: 50%;
+    border: 2px solid #000;
+    padding: 14px 20px;
+    text-align: center;
+  }
+  .crypto .name {
+    font-size: 30px;
+  }
+  .crypto .price {
+    font-size: 54px;
+    font-weight: bold;
+  }
+  .crypto .chg {
+    font-size: 28px;
+  }
+  .quote {
+    border-top: 4px solid #000;
+    padding: 22px 40px;
+    font-size: 34px;
+    text-align: center;
+    line-height: 1.5;
+    min-height: 110px;
+  }
+  .footer {
+    font-size: 22px;
+    color: #333;
+    text-align: center;
+    padding: 10px 20px 20px;
+    border-top: 1px solid #999;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div id="clock">--:--:--</div>
+    <div id="date">----年--月--日</div>
+  </div>
+
+  <table class="grid">
+    <tr>
+      <td class="col">
+        <div class="panel">
+          <h2>天气 Weather（模拟）</h2>
+          <div id="weatherMain" class="weather-main">--</div>
+          <div id="weatherDetail" class="weather-detail">--</div>
+          <div id="forecast">--</div>
+        </div>
+      </td>
+      <td class="col">
+        <div class="panel">
+          <h2>新闻 News（模拟）</h2>
+          <ul id="newsList" class="news"></ul>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <table class="crypto">
+    <tr>
+      <td>
+        <div class="name">Bitcoin 比特币</div>
+        <div id="btcPrice" class="price">--</div>
+        <div id="btcChg" class="chg">--</div>
+      </td>
+      <td>
+        <div class="name">Ethereum 以太坊</div>
+        <div id="ethPrice" class="price">--</div>
+        <div id="ethChg" class="chg">--</div>
+      </td>
+    </tr>
+  </table>
+
+  <div id="quote" class="quote">--</div>
+
+  <div class="footer">
+    上次更新 <span id="lastUpdate">--</span> ｜ 下次刷新 <span id="countdown">--</span> ｜ 数据为模拟，可替换为真实 API
+  </div>
+
+<script>
+/* ========== 配置 ========== */
+var REFRESH_MS = 30 * 60 * 1000;  // 每 30 分钟刷新一次
+var CLOCK_MS   = 1000;            // 时钟每 1 秒更新（想更省电可改为 10000）
+
+/* ========== 模拟数据（以后替换成 API 返回） ========== */
+var WEATHER = {
+  city: "上海",
+  temp: "28°C",
+  cond: "多云",
+  hum: "62%",
+  wind: "东南风 3 级",
+  forecast: [
+    "今天：多云 26~31°C",
+    "明天：阵雨 24~29°C",
+    "后天：晴 25~32°C"
+  ]
+};
+
+var NEWS = [
+  { time: "09:30", title: "本地新闻：城市轨道交通新线路今日开通试运营" },
+  { time: "09:12", title: "科技：新一代电子墨水屏阅读器销量同比增长 18%" },
+  { time: "08:47", title: "财经：央行开展 2000 亿元逆回购操作" },
+  { time: "08:20", title: "国际：多国代表就气候合作达成初步共识" },
+  { time: "07:55", title: "体育：联赛冠军悬念保留至最后一轮" }
+];
+
+var CRYPTO = {
+  btc: { price: "$58,432", chg: "+2.4%" },
+  eth: { price: "$2,987",  chg: "-1.2%" }
+};
+
+var QUOTES = [
+  "读书不觉已春深，一寸光阴一寸金。",
+  "不积跬步，无以至千里；不积小流，无以成江海。",
+  "博观而约取，厚积而薄发。",
+  "知之者不如好之者，好之者不如乐之者。",
+  "路漫漫其修远兮，吾将上下而求索。",
+  "纸上得来终觉浅，绝知此事要躬行。"
+];
+
+/* ========== 页面渲染 ========== */
+function pad(n) {
+  return (n < 10 ? "0" : "") + n;
+}
+
+function pickByDay(arr) {
+  var now = new Date();
+  var day = Math.floor(now.getTime() / 86400000);
+  return arr[day % arr.length];
+}
+
+function renderData() {
+  document.getElementById("weatherMain").textContent =
+    WEATHER.city + "  " + WEATHER.cond + "  " + WEATHER.temp;
+  document.getElementById("weatherDetail").textContent =
+    "湿度 " + WEATHER.hum + " ｜ " + WEATHER.wind;
+  document.getElementById("forecast").textContent = WEATHER.forecast.join("\n");
+
+  var list = document.getElementById("newsList");
+  var html = "";
+  for (var i = 0; i < NEWS.length; i++) {
+    html += "<li><span class=\"news-time\">[" + NEWS[i].time + "]</span> " + NEWS[i].title + "</li>";
+  }
+  list.innerHTML = html;
+
+  document.getElementById("btcPrice").textContent = CRYPTO.btc.price;
+  document.getElementById("btcChg").textContent  = "24h " + CRYPTO.btc.chg;
+  document.getElementById("ethPrice").textContent = CRYPTO.eth.price;
+  document.getElementById("ethChg").textContent  = "24h " + CRYPTO.eth.chg;
+
+  document.getElementById("quote").textContent = "“" + pickByDay(QUOTES) + "”";
+}
+
+/* ========== 时钟 & 倒计时 ========== */
+var START = Date.now();
+
+function tick() {
+  var now = new Date();
+  var h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+  document.getElementById("clock").textContent = pad(h) + ":" + pad(m) + ":" + pad(s);
+
+  var week = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
+  document.getElementById("date").textContent =
+    now.getFullYear() + "年" + (now.getMonth() + 1) + "月" + now.getDate() + "日 " + week[now.getDay()];
+
+  var remain = REFRESH_MS - ((Date.now() - START) % REFRESH_MS);
+  var mm = Math.floor(remain / 60000);
+  var ss = Math.floor((remain % 60000) / 1000);
+  document.getElementById("countdown").textContent = pad(mm) + ":" + pad(ss);
+}
+
+setInterval(tick, CLOCK_MS);
+
+/* ========== 30 分钟自动刷新 ==========
+   说明：刷新整页会让屏幕闪一下，属正常现象。
+   若个别固件的浏览器不执行 JS 定时刷新，
+   可删掉上面的 setTimeout，改用这一行替代：
+   <meta http-equiv="refresh" content="1800">
+ */
+setTimeout(function () {
+  location.reload();
+}, REFRESH_MS);
+
+/* ========== 初始化 ========== */
+function init() {
+  var now = new Date();
+  document.getElementById("lastUpdate").textContent =
+    pad(now.getHours()) + ":" + pad(now.getMinutes());
+  renderData();
+  tick();
+}
+init();
+
+/* ========== 以后接入真实 API（可选） ==========
+   把 renderData() 里取数改为请求 JSON 即可，例如：
+
+   var xhr = new XMLHttpRequest();
+   xhr.open("GET", "https://api.example.com/dashboard.json", true);
+   xhr.onload = function () {
+     if (xhr.status === 200) {
+       // var data = JSON.parse(xhr.responseText);
+       // 用 data 覆盖 WEATHER / NEWS / CRYPTO 后调用 renderData();
+     }
+   };
+   xhr.send();
+*/
+</script>
+</body>
+</html>
