@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=1072">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <title>Kindle 信息仪表盘</title>
 <style>
   html, body {
@@ -15,288 +17,1195 @@
     width: 1072px;
     font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
   }
-  .header {
-    padding: 24px 30px 14px;
-    border-bottom: 4px solid #000;
-    text-align: center;
-  }
-  #clock {
-    font-size: 120px;
-    font-weight: bold;
-    letter-spacing: 6px;
-    line-height: 1.1;
-  }
-  #date {
-    font-size: 44px;
-    margin-top: 4px;
-  }
   table.grid {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
   }
-  td.col {
+  td.cell {
     width: 50%;
     vertical-align: top;
   }
   .panel {
     border: 2px solid #000;
-    margin: 16px 12px;
-    padding: 14px 18px;
-    min-height: 520px;
+    margin: 8px 10px;
+    padding: 8px 14px 12px;
+    border-radius: 16px;
   }
-  h2 {
-    font-size: 36px;
-    margin: 0 0 10px;
-    padding-bottom: 8px;
+  .panel h2 {
+    font-size: 28px;
+    margin: 0 0 6px;
+    padding-bottom: 4px;
     border-bottom: 2px solid #000;
   }
-  .panel p, .panel li {
-    font-size: 30px;
-    line-height: 1.45;
+  .p-body {
+    font-size: 26px;
+    line-height: 1.4;
   }
-  .weather-main {
-    font-size: 44px;
+
+  .clock-panel {
+    border: 3px dashed #000;
+    border-radius: 30px;
+    margin: 10px;
+    padding: 14px 20px 12px;
+    text-align: center;
+    background: #f4f4f4;
+  }
+  .clock-time {
+    font-size: 102px;
     font-weight: bold;
-    margin: 8px 0 14px;
+    letter-spacing: 4px;
+    line-height: 1.1;
   }
-  .weather-detail {
-    font-size: 28px;
-    color: #222;
+  .clock-sec {
+    font-size: 44px;
+    letter-spacing: 2px;
   }
-  #forecast {
-    margin-top: 12px;
-    font-size: 28px;
-    line-height: 1.6;
+  .clock-date {
+    font-size: 34px;
+    margin-top: 2px;
+  }
+  .clock-greet {
+    font-size: 26px;
+    margin-top: 2px;
+  }
+
+  .w-main {
+    font-size: 38px;
+    font-weight: bold;
+  }
+  .w-sub {
+    font-size: 24px;
+    color: #333;
+    margin-top: 2px;
+  }
+  .w-fc {
+    font-size: 23px;
+    line-height: 1.5;
+    margin-top: 6px;
     white-space: pre-line;
   }
-  ul.news {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  ul.news li {
-    padding: 10px 0;
-    border-bottom: 1px solid #999;
-  }
-  ul.news li:last-child {
-    border-bottom: none;
-  }
-  .news-time {
-    color: #333;
+
+  .cat {
     font-size: 24px;
+    font-weight: bold;
+    margin-top: 6px;
   }
-  .crypto {
+  .news-item {
+    font-size: 22px;
+    line-height: 1.25;
+    padding: 2px 0 2px 8px;
+    border-left: 3px solid #666;
+    margin: 3px 0;
+  }
+
+  table.t {
     width: 100%;
     border-collapse: collapse;
-    table-layout: fixed;
+    font-size: 24px;
   }
-  .crypto td {
-    width: 50%;
-    border: 2px solid #000;
-    padding: 14px 20px;
-    text-align: center;
+  table.t td {
+    padding: 4px 2px;
+    border-bottom: 1px solid #ccc;
   }
-  .crypto .name {
-    font-size: 30px;
+  table.t tr:last-child td {
+    border-bottom: none;
   }
-  .crypto .price {
-    font-size: 54px;
+  .td-r {
+    text-align: right;
+  }
+  .up { color: #000; }
+  .down { color: #000; }
+
+  .count-item {
+    font-size: 26px;
+    padding: 5px 0;
+    border-bottom: 1px solid #ccc;
+  }
+  .count-item:last-child {
+    border-bottom: none;
+  }
+  .count-days {
+    font-size: 32px;
     font-weight: bold;
   }
-  .crypto .chg {
-    font-size: 28px;
+
+  .todo-item {
+    font-size: 25px;
+    padding: 4px 0;
   }
-  .quote {
-    border-top: 4px solid #000;
-    padding: 22px 40px;
-    font-size: 34px;
-    text-align: center;
-    line-height: 1.5;
-    min-height: 110px;
+  .todo-item input {
+    width: 24px;
+    height: 24px;
   }
-  .footer {
+  .todo-done {
+    text-decoration: line-through;
+    color: #666;
+  }
+  .bar {
     font-size: 22px;
+    letter-spacing: 1px;
+    margin-top: 6px;
+  }
+
+  .quote-box {
+    font-size: 30px;
+    text-align: center;
+    line-height: 1.45;
+    padding: 14px 10px;
+  }
+
+  img.wall {
+    width: 100%;
+    max-height: 220px;
+    border: 1px solid #999;
+  }
+  .wall-cap {
+    font-size: 21px;
+    color: #333;
+    margin-top: 3px;
+  }
+
+  .footer {
+    font-size: 21px;
     color: #333;
     text-align: center;
-    padding: 10px 20px 20px;
+    padding: 6px 20px 14px;
     border-top: 1px solid #999;
+    margin-top: 8px;
+  }
+  .err {
+    color: #333;
+    font-size: 22px;
+  }
+  .tip {
+    font-size: 20px;
+    color: #444;
+  }
+  button {
+    font-size: 24px;
+    margin: 4px 4px 4px 0;
+    padding: 4px 12px;
+  }
+  .edit-row {
+    font-size: 24px;
+    margin: 6px 0;
+  }
+  .edit-row input {
+    font-size: 24px;
+    width: 250px;
+  }
+  .edit-row input.d {
+    width: 180px;
+  }
+  .edit-row input.cb {
+    width: auto;
   }
 </style>
 </head>
 <body>
-  <div class="header">
-    <div id="clock">--:--:--</div>
-    <div id="date">----年--月--日</div>
+
+<div id="clockBox"></div>
+<div id="grid"></div>
+
+<div id="editPanel" class="panel" style="display:none">
+  <h2>编辑倒计时与待办</h2>
+  <div class="w-sub">倒计时（日期格式 YYYY-MM-DD）</div>
+  <div id="editCount"></div>
+  <button onclick="addCnt()">+ 添加倒计时</button>
+  <div class="w-sub" style="margin-top:8px">待办事项</div>
+  <div id="editTodo"></div>
+  <button onclick="addTodo()">+ 添加待办</button>
+  <div style="margin-top:10px">
+    <button onclick="saveEdits()">保存</button>
+    <button onclick="resetEdits()">恢复默认</button>
+    <button onclick="toggleEdit(false)">取消</button>
   </div>
+  <div class="tip">保存后只在这台设备的浏览器里生效；清除浏览器缓存会恢复成文件里的配置。</div>
+</div>
 
-  <table class="grid">
-    <tr>
-      <td class="col">
-        <div class="panel">
-          <h2>天气 Weather（模拟）</h2>
-          <div id="weatherMain" class="weather-main">--</div>
-          <div id="weatherDetail" class="weather-detail">--</div>
-          <div id="forecast">--</div>
-        </div>
-      </td>
-      <td class="col">
-        <div class="panel">
-          <h2>新闻 News（模拟）</h2>
-          <ul id="newsList" class="news"></ul>
-        </div>
-      </td>
-    </tr>
-  </table>
-
-  <table class="crypto">
-    <tr>
-      <td>
-        <div class="name">Bitcoin 比特币</div>
-        <div id="btcPrice" class="price">--</div>
-        <div id="btcChg" class="chg">--</div>
-      </td>
-      <td>
-        <div class="name">Ethereum 以太坊</div>
-        <div id="ethPrice" class="price">--</div>
-        <div id="ethChg" class="chg">--</div>
-      </td>
-    </tr>
-  </table>
-
-  <div id="quote" class="quote">--</div>
-
-  <div class="footer">
-    上次更新 <span id="lastUpdate">--</span> ｜ 下次刷新 <span id="countdown">--</span> ｜ 数据为模拟，可替换为真实 API
-  </div>
+<div class="footer">
+  版本 <span id="appVer">--</span> ｜ 上次更新 <span id="lastUpdate">--</span> ｜ 下次刷新 <span id="countdown">--</span> ｜ <span id="cloudStatus"></span> <button id="editBtn" onclick="toggleEdit()">编辑</button>
+</div>
 
 <script>
-/* ========== 配置 ========== */
-var REFRESH_MS = 30 * 60 * 1000;  // 每 30 分钟刷新一次
-var CLOCK_MS   = 1000;            // 时钟每 1 秒更新（想更省电可改为 10000）
+/* ================================================================
+   一、配置区（改这里即可，不需要动下面的代码）
+   ================================================================ */
+var APP_VERSION = "v5-20260810";   // 页面版本号，上传后用来判断网页是否已更新
 
-/* ========== 模拟数据（以后替换成 API 返回） ========== */
-var WEATHER = {
-  city: "上海",
-  temp: "28°C",
-  cond: "多云",
-  hum: "62%",
-  wind: "东南风 3 级",
-  forecast: [
-    "今天：多云 26~31°C",
-    "明天：阵雨 24~29°C",
-    "后天：晴 25~32°C"
-  ]
+var CONFIG = {
+  refreshMs: 30 * 60 * 1000,   // 整页刷新间隔
+  clockMs: 1000,               // 时钟更新间隔（省电可改 10000）
+
+  /* --- 天气 ---
+     weatherApi 三选一：
+     "openmeteo"  ：Open-Meteo，完全免费、无需注册和 Key（默认，推荐）
+     "openweather"：OpenWeather（免费 Key；建议 openweatherUseProxy 保持 true，国内才能访问）
+     "qweather"   ：和风天气（免费个人版需实名认证，可选）
+     openmeteo 用经纬度定位：温州 27.99,120.70；上海 31.23,121.47；北京 39.90,116.41。 */
+  city: "温州",
+  weatherApi: "openmeteo",
+  openWeatherKey: "2d7dcdbd0ea58767e1e21a69234f8c2d",
+  openweatherUseProxy: true,
+  weatherLat: "27.99",
+  weatherLon: "120.70",
+  qweatherKey: "",
+  qweatherLocation: "101210701",
+
+  /* --- CORS 代理：把不允许跨域的数据接口转成可访问 ---
+     国内网络若失败，可换成 https://corsproxy.io/?url= */
+  proxy: "https://api.allorigins.win/raw?url=",
+
+  /* --- 股市大盘行情（腾讯行情接口，免费无需 Key）---
+     支持 A 股、港股、美股指数：
+     上证指数 sh000001 / 深证成指 sz399001 / 创业板指 sz399006 /
+     恒生指数 hkHSI / 纳斯达克 usIXIC / 道琼斯 usDJI */
+  stocks: [
+    { name: "上证指数", code: "sh000001" },
+    { name: "深证成指", code: "sz399001" },
+    { name: "创业板指", code: "sz399006" },
+    { name: "恒生指数", code: "hkHSI" }
+  ],
+
+  /* --- 国内内容源 ---
+     feeds 里每一项：
+     type "rss"  -> 任意 RSS 地址（用 rss 字段）
+     type "json" -> 接口返回 JSON，listPath 写数组路径，titleKey 写标题字段
+     下面两个可选源填了才会显示：
+     bilibiliUids：B站UP主 UID 列表，可填多个，显示各UP主最近动态
+     xiaohongshuRssUrl：小红书没有公开接口，若你以后自建了 RSSHub
+        并配置了小红书 Cookie，可把生成的 RSS 地址填在这里 */
+  feeds: [
+    { name: "B站热搜", type: "json",
+      url: "https://api.bilibili.com/x/web-interface/search/square?limit=10",
+      listPath: "data.trending.list", titleKey: "keyword", count: 4 },
+    { name: "知乎热榜", type: "json",
+      url: "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=10",
+      listPath: "data", titleKey: "target.title", count: 3 },
+    { name: "微博热搜", type: "json",
+      url: "https://weibo.com/ajax/side/hotSearch",
+      listPath: "data.realtime", titleKey: "word", count: 3 }
+  ],
+  /* --- B站UP主动态：可填多个 ---
+     每项一行：{ name: "显示名字", uid: "UP主UID" }
+     UID 获取：B站网页打开UP主主页，地址栏 space.bilibili.com/ 后面的数字。
+     例如：{ name: "哔哩哔哩官方", uid: "2" } */
+  bilibiliUids: [
+    { name: "极客湾Geekerwan", uid: "25876945" },
+    { name: "谈三圈", uid: "520814591" },
+    { name: "一网一匠", uid: "383814461" },
+    { name: "FUN科技", uid: "9321359" },
+    // { name: "大小马聊科技", uid: "把UID数字填这里" }
+  ],
+  xiaohongshuRssUrl: "",        // 留空即可；自建 RSSHub 后再填
+  rsshub: "https://rsshub.app", // B站UP主 RSS 服务，被限流可换 https://rsshub.rssforever.com
+
+  /* --- DeepSeek API 余额 ---
+     apiKey：你的 DeepSeek API Key（注意：公开网页里填 Key 有泄露风险，见 README）
+     单价：按 DeepSeek 官网最新价填（元/百万 tokens）。
+       2026-08 官方预告新价：V4-Flash 输入 1 / 输出 2；
+       V4-Pro 输入 3 / 输出 6（缓存命中更便宜）。
+     manualBalance：自动查询被浏览器拦截时，手动填余额（元）兜底。 */
+  deepseek: {
+    apiKey: "sk-9d40e6541ca24570b9b9bf801529f147",
+    priceInPerM: 1,
+    priceOutPerM: 2,
+    manualBalance: ""
+  },
+
+  /* --- 重要倒计时：date 格式 YYYY-MM-DD --- */
+  countdowns: [
+    { name: "金鹏伟结婚",   date: "2026-10-03" },
+    { name: "春节",   date: "2027-02-17" },
+    { name: "双十一", date: "2026-11-11" }
+  ],
+
+  /* --- 待办事项（勾选状态会自动保存） --- */
+  todos: [
+    { text: "部署新版仪表盘", done: false },
+    { text: "填写 OpenWeather API Key", done: false },
+    { text: "填写 B站UP主 UID", done: false }
+  ],
+
+  /* --- 多设备云端同步（可选，无需注册）---
+     jsonblob：免费 JSON 云存储，不用注册、不用 Key，国内一般可访问。
+     用法：先在任意设备打开页面 → 编辑 → 保存，底部会显示“云端ID: xxxxx”，
+     把 ID 填到下面 blobId 并重新上传，之后所有设备共用它同步。
+     不填则编辑只保存在本机浏览器。 */
+  jsonblob: {
+    blobId: ""
+  },
+
+  /* --- 每日一图：留空用必应每日壁纸，或填任意图片直链 --- */
+  wallpaperUrl: "",
+
+  /* --- 模块开关与顺序 --- */
+  modules: {
+    clock:     { on: true,  title: "时钟" },
+    weather:   { on: true,  title: "天气预报" },
+    feeds:     { on: true,  title: "国内内容" },
+    stock:     { on: true,  title: "股市大盘" },
+    deepseek:  { on: true,  title: "DeepSeek 余额" },
+    countdown: { on: true,  title: "重要倒计时" },
+    todo:      { on: true,  title: "待办事项" },
+    wallpaper: { on: true,  title: "每日一图" },
+    quote:     { on: true,  title: "每日一言" }
+  },
+  moduleOrder: ["clock", "weather", "feeds", "stock", "deepseek", "countdown", "todo", "wallpaper", "quote"]
 };
 
-var NEWS = [
-  { time: "09:30", title: "本地新闻：城市轨道交通新线路今日开通试运营" },
-  { time: "09:12", title: "科技：新一代电子墨水屏阅读器销量同比增长 18%" },
-  { time: "08:47", title: "财经：央行开展 2000 亿元逆回购操作" },
-  { time: "08:20", title: "国际：多国代表就气候合作达成初步共识" },
-  { time: "07:55", title: "体育：联赛冠军悬念保留至最后一轮" }
-];
-
-var CRYPTO = {
-  btc: { price: "$58,432", chg: "+2.4%" },
-  eth: { price: "$2,987",  chg: "-1.2%" }
+/* ================================================================
+   二、模拟数据（接口失败时的兜底）
+   ================================================================ */
+var MOCK = {
+  weather: {
+    cur: "上海  多云  28°C",
+    sub: "湿度 62% ｜ 东南风 3 级",
+    fc: ["今天：多云 26~31°C", "明天：阵雨 24~29°C", "后天：晴 25~32°C"]
+  },
+  stock: [
+    { name: "上证指数", price: "3528.52", pct: "+0.82%" },
+    { name: "深证成指", price: "10428.31", pct: "-0.15%" },
+    { name: "创业板指", price: "2179.04", pct: "+1.10%" },
+    { name: "恒生指数", price: "17640.20", pct: "-0.63%" }
+  ],
+  quote: "博观而约取，厚积而薄发。"
 };
 
 var QUOTES = [
   "读书不觉已春深，一寸光阴一寸金。",
   "不积跬步，无以至千里；不积小流，无以成江海。",
-  "博观而约取，厚积而薄发。",
   "知之者不如好之者，好之者不如乐之者。",
   "路漫漫其修远兮，吾将上下而求索。",
-  "纸上得来终觉浅，绝知此事要躬行。"
+  "纸上得来终觉浅，绝知此事要躬行。",
+  "凡事预则立，不预则废。"
 ];
 
-/* ========== 页面渲染 ========== */
-function pad(n) {
-  return (n < 10 ? "0" : "") + n;
+/* ================================================================
+   三、工具函数
+   ================================================================ */
+function $(id) { return document.getElementById(id); }
+
+function pad(n) { return (n < 10 ? "0" : "") + n; }
+
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function pickByDay(arr) {
+function escAttr(s) {
+  return esc(s).replace(/"/g, "&quot;");
+}
+
+function xhrGet(url, done) {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", url, true);
+  xhr.timeout = 12000;
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4) {
+      if (xhr.status >= 200 && xhr.status < 300) { done(null, xhr.responseText); }
+      else { done(new Error("HTTP " + xhr.status)); }
+    }
+  };
+  xhr.ontimeout = function () { done(new Error("timeout")); };
+  xhr.onerror = function () { done(new Error("network")); };
+  xhr.send();
+}
+
+function jsonGet(url, done) {
+  xhrGet(url, function (err, txt) {
+    if (err) { done(err); return; }
+    try { done(null, JSON.parse(txt)); }
+    catch (e) { done(e); }
+  });
+}
+
+function proxied(u) { return CONFIG.proxy + encodeURIComponent(u); }
+
+function decodeEntities(s) {
+  return s
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ");
+}
+
+function getPath(obj, path) {
+  var parts = path.split(".");
+  var cur = obj;
+  for (var i = 0; i < parts.length; i++) {
+    if (!cur) { return null; }
+    cur = cur[parts[i]];
+  }
+  return cur;
+}
+
+function formatNum(n) {
+  if (n === undefined || n === null || isNaN(n)) { return "--"; }
+  var s = Math.round(n).toString();
+  var out = "";
+  for (var i = 0; i < s.length; i++) {
+    out += s[i];
+    var fromRight = s.length - 1 - i;
+    if (fromRight > 0 && fromRight % 3 === 0) { out += ","; }
+  }
+  return out;
+}
+
+function setBody(id, html) {
+  var el = $("mod-" + id);
+  if (el) { el.innerHTML = html; }
+}
+
+function panelHtml(title, body) {
+  return '<div class="panel"><h2>' + esc(title) + '</h2><div class="p-body">' + body + '</div></div>';
+}
+
+/* ================================================================
+   四、模块渲染
+   ================================================================ */
+
+/* --- 时钟（可爱版） --- */
+function renderClock() {
+  var now = new Date();
+  var h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+  var week = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
+  var greet = h < 6 ? "夜深了，早点休息 ★" :
+              h < 12 ? "早上好，元气满满 ☆" :
+              h < 18 ? "下午好，继续加油 ☆" : "晚上好，放松一下 ★";
+  $("clockBox").innerHTML =
+    '<div class="clock-panel">' +
+      '<div class="clock-time">' + pad(h) + ':' + pad(m) + '<span class="clock-sec">:' + pad(s) + '</span></div>' +
+      '<div class="clock-date">' + now.getFullYear() + '年' + (now.getMonth() + 1) + '月' + now.getDate() + '日 ' + week[now.getDay()] + '</div>' +
+      '<div class="clock-greet">' + greet + '</div>' +
+    '</div>';
+}
+
+/* --- 天气预报：实时 + 未来三天 --- */
+function renderWeather() {
+  if (CONFIG.weatherApi === "qweather") { renderQWeather(); return; }
+  if (CONFIG.weatherApi === "openmeteo") { renderOpenMeteo(); return; }
+  renderOpenWeather();
+}
+
+function renderOpenWeather() {
+  var key = CONFIG.openWeatherKey;
+  if (!key) {
+    var w = MOCK.weather;
+    setBody("weather",
+      '<div class="w-main">' + esc(CONFIG.city + " 多云 28°C") + '</div>' +
+      '<div class="w-sub">' + esc(w.sub) + '</div>' +
+      '<div class="w-fc">' + esc(w.fc.join("\n")) + '</div>' +
+      '<div class="tip">（未填 OpenWeather API Key，显示模拟数据）</div>');
+    return;
+  }
+  var q = encodeURIComponent(CONFIG.city);
+  var curUrl = "https://api.openweathermap.org/data/2.5/weather?q=" + q + "&appid=" + key + "&units=metric&lang=zh_cn";
+  var fcUrl = "https://api.openweathermap.org/data/2.5/forecast?q=" + q + "&appid=" + key + "&units=metric&lang=zh_cn";
+  if (CONFIG.openweatherUseProxy) {
+    curUrl = proxied(curUrl);
+    fcUrl = proxied(fcUrl);
+  }
+  setBody("weather", '<div class="w-main">加载中…</div><div class="w-fc"></div>');
+
+  jsonGet(curUrl, function (err, d) {
+    if (err || !d || !d.main) {
+      setBody("weather", '<div class="err">天气加载失败（' + esc(err ? err.message : "无数据") + '），国内网络建议改用和风天气</div>');
+      return;
+    }
+    var desc = (d.weather && d.weather[0]) ? d.weather[0].description : "";
+    setBody("weather",
+      '<div class="w-main">' + esc(d.name + "  " + desc + "  " + Math.round(d.main.temp) + "°C") + '</div>' +
+      '<div class="w-sub">湿度 ' + Math.round(d.main.humidity) + '% ｜ 体感 ' + Math.round(d.main.feels_like) + '°C</div>' +
+      '<div class="w-fc" id="fcBody">三天预报加载中…</div>');
+
+    jsonGet(fcUrl, function (err2, d2) {
+      var fcEl = $("fcBody");
+      if (err2 || !d2 || !d2.list) {
+        if (fcEl) { fcEl.textContent = "（三天预报加载失败）"; }
+        return;
+      }
+      var days = {};
+      var order = [];
+      for (var i = 0; i < d2.list.length; i++) {
+        var it = d2.list[i];
+        var dt = it.dt_txt.split(" ")[0];
+        var dd = days[dt];
+        var tmin = it.main.temp_min, tmax = it.main.temp_max;
+        var dsc = (it.weather && it.weather[0]) ? it.weather[0].description : "";
+        if (!dd) {
+          days[dt] = { min: tmin, max: tmax, desc: dsc };
+          order.push(dt);
+        } else {
+          dd.min = Math.min(dd.min, tmin);
+          dd.max = Math.max(dd.max, tmax);
+          if (!dd.desc && dsc) { dd.desc = dsc; }
+        }
+      }
+      var names = ["今天", "明天", "后天"];
+      var lines = [];
+      for (var j = 0; j < Math.min(3, order.length); j++) {
+        var day = days[order[j]];
+        lines.push(names[j] + "：" + (day.desc || "") + " " + Math.round(day.min) + "~" + Math.round(day.max) + "°C");
+      }
+      if (fcEl) { fcEl.textContent = lines.join("\n"); }
+    });
+  });
+}
+
+function wmoText(code) {
+  if (code === 0) { return "晴"; }
+  if (code === 1) { return "多云"; }
+  if (code === 2 || code === 3) { return "阴"; }
+  if (code === 45 || code === 48) { return "雾"; }
+  if (code === 51 || code === 53 || code === 55) { return "毛毛雨"; }
+  if (code === 56 || code === 57 || code === 66 || code === 67) { return "冻雨"; }
+  if (code === 61 || code === 63 || code === 65) { return "雨"; }
+  if (code === 71 || code === 73 || code === 75 || code === 77) { return "雪"; }
+  if (code === 80 || code === 81 || code === 82) { return "阵雨"; }
+  if (code === 85 || code === 86) { return "阵雪"; }
+  if (code >= 95) { return "雷雨"; }
+  return "未知";
+}
+
+function renderOpenMeteo() {
+  var url = "https://api.open-meteo.com/v1/forecast?latitude=" + encodeURIComponent(CONFIG.weatherLat) +
+            "&longitude=" + encodeURIComponent(CONFIG.weatherLon) +
+            "&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=3";
+  setBody("weather", '<div class="w-main">加载中…</div><div class="w-fc"></div>');
+  jsonGet(url, function (err, d) {
+    if (err || !d || !d.current_weather) {
+      setBody("weather", '<div class="err">天气加载失败（' + esc(err ? err.message : "无数据") + '）</div>');
+      return;
+    }
+    var cw = d.current_weather;
+    var main = CONFIG.city + "  " + wmoText(cw.weathercode) + "  " + Math.round(cw.temperature) + "°C";
+    var sub = "风速 " + Math.round(cw.windspeed) + " km/h ｜ 风向 " + Math.round(cw.winddirection) + "°";
+    setBody("weather",
+      '<div class="w-main">' + esc(main) + '</div>' +
+      '<div class="w-sub">' + esc(sub) + '</div>' +
+      '<div class="w-fc" id="fcBody">三天预报加载中…</div>');
+    var dl = d.daily;
+    var fcEl = $("fcBody");
+    if (!dl || !dl.time || !dl.time.length) {
+      if (fcEl) { fcEl.textContent = "（三天预报加载失败）"; }
+      return;
+    }
+    var names = ["今天", "明天", "后天"];
+    var lines = [];
+    for (var i = 0; i < Math.min(3, dl.time.length); i++) {
+      lines.push(names[i] + "：" + wmoText(dl.weathercode[i]) + " " +
+        Math.round(dl.temperature_2m_min[i]) + "~" + Math.round(dl.temperature_2m_max[i]) + "°C");
+    }
+    if (fcEl) { fcEl.textContent = lines.join("\n"); }
+  });
+}
+
+function renderQWeather() {
+  var key = CONFIG.qweatherKey;
+  if (!key) {
+    var w = MOCK.weather;
+    setBody("weather",
+      '<div class="w-main">' + esc(CONFIG.city + " 多云 28°C") + '</div>' +
+      '<div class="w-sub">' + esc(w.sub) + '</div>' +
+      '<div class="w-fc">' + esc(w.fc.join("\n")) + '</div>' +
+      '<div class="tip">（未填和风天气 Key，显示模拟数据）</div>');
+    return;
+  }
+  var loc = CONFIG.qweatherLocation || "101020100";
+  var nowUrl = "https://devapi.qweather.com/v7/weather/now?location=" + encodeURIComponent(loc) + "&key=" + key;
+  var fcUrl = "https://devapi.qweather.com/v7/weather/3d?location=" + encodeURIComponent(loc) + "&key=" + key;
+  setBody("weather", '<div class="w-main">加载中…</div><div class="w-fc"></div>');
+
+  jsonGet(nowUrl, function (err, d) {
+    if (err || !d || d.code !== "200" || !d.now) {
+      setBody("weather", '<div class="err">天气加载失败（' + esc(err ? err.message : (d ? "code " + d.code : "无数据")) + '）</div>');
+      return;
+    }
+    var n = d.now;
+    setBody("weather",
+      '<div class="w-main">' + esc(CONFIG.city + "  " + n.text + "  " + n.temp + "°C") + '</div>' +
+      '<div class="w-sub">湿度 ' + n.humidity + '% ｜ 体感 ' + n.feelsLike + '°C ｜ ' + n.windDir + " " + n.windScale + ' 级</div>' +
+      '<div class="w-fc" id="fcBody">三天预报加载中…</div>');
+
+    jsonGet(fcUrl, function (err2, d2) {
+      var fcEl = $("fcBody");
+      if (err2 || !d2 || d2.code !== "200" || !d2.daily) {
+        if (fcEl) { fcEl.textContent = "（三天预报加载失败）"; }
+        return;
+      }
+      var names = ["今天", "明天", "后天"];
+      var lines = [];
+      for (var i = 0; i < Math.min(3, d2.daily.length); i++) {
+        var day = d2.daily[i];
+        lines.push(names[i] + "：" + (day.textDay || "") + " " + day.tempMin + "~" + day.tempMax + "°C");
+      }
+      if (fcEl) { fcEl.textContent = lines.join("\n"); }
+    });
+  });
+}
+
+/* --- 国内内容源 --- */
+function parseRss(xmlText) {
+  var items = [];
+  var re = /<item>([\s\S]*?)<\/item>/g;
+  var mm;
+  while ((mm = re.exec(xmlText)) !== null) { items.push(mm[1]); }
+  var out = [];
+  for (var i = 0; i < items.length && out.length < 5; i++) {
+    var t = items[i].match(/<title>(.*?)<\/title>/);
+    if (t && t[1]) {
+      var title = decodeEntities(t[1].replace(/<!\[CDATA\[|\]\]>/g, "")).replace(/\s+/g, " ").trim();
+      if (title) { out.push(title); }
+    }
+  }
+  return out;
+}
+
+function feedTitles(feed, cb) {
+  if (feed.type === "rss") {
+    xhrGet(proxied(feed.url), function (err, txt) {
+      if (err || !txt) { cb(null, []); return; }
+      cb(null, parseRss(txt));
+    });
+  } else if (feed.type === "json") {
+    jsonGet(proxied(feed.url), function (err, data) {
+      if (err || !data) { cb(null, []); return; }
+      var arr = getPath(data, feed.listPath);
+      if (!arr || !arr.length) { cb(null, []); return; }
+      var out = [];
+      var limit = feed.count || 3;
+      for (var i = 0; i < arr.length && out.length < limit; i++) {
+        var title = getPath(arr[i], feed.titleKey);
+        if (title) { out.push(String(title).trim()); }
+      }
+      cb(null, out);
+    });
+  } else {
+    cb(null, []);
+  }
+}
+
+function renderFeeds() {
+  var feeds = [];
+  for (var i = 0; i < CONFIG.feeds.length; i++) { feeds.push(CONFIG.feeds[i]); }
+  if (CONFIG.bilibiliUids && CONFIG.bilibiliUids.length) {
+    for (var bi = 0; bi < CONFIG.bilibiliUids.length; bi++) {
+      var bu = CONFIG.bilibiliUids[bi];
+      feeds.push({ name: bu.name || ("B站UP主 " + bu.uid), type: "rss",
+        url: CONFIG.rsshub + "/bilibili/user/dynamic/" + bu.uid, count: 3 });
+    }
+  }
+  if (CONFIG.xiaohongshuRssUrl) {
+    feeds.push({ name: "小红书博主", type: "rss", url: CONFIG.xiaohongshuRssUrl, count: 3 });
+  }
+  if (!feeds.length) {
+    setBody("feeds", '<div class="err">请在 CONFIG.feeds 添加内容源</div>');
+    return;
+  }
+  var results = [];
+  var done = 0;
+  function finishAll() {
+    var html = "";
+    for (var i = 0; i < feeds.length; i++) {
+      var titles = results[i] || [];
+      html += '<div class="cat">' + esc(feeds[i].name) + '</div>';
+      if (!titles.length) {
+        html += '<div class="news-item">（暂无内容或加载失败）</div>';
+      } else {
+        var limit = Math.min(titles.length, feeds[i].count || 3);
+        for (var j = 0; j < limit; j++) {
+          html += '<div class="news-item">' + esc(titles[j]) + '</div>';
+        }
+      }
+    }
+    setBody("feeds", html);
+  }
+  for (var k = 0; k < feeds.length; k++) {
+    (function (idx) {
+      feedTitles(feeds[idx], function (err, titles) {
+        results[idx] = titles || [];
+        done++;
+        if (done >= feeds.length) { finishAll(); }
+      });
+    })(k);
+  }
+}
+
+/* --- 股市大盘（腾讯行情接口） --- */
+function renderStock() {
+  var list = CONFIG.stocks;
+  if (!list.length) { setBody("stock", '<div class="err">请在 CONFIG.stocks 添加指数</div>'); return; }
+  var codes = [];
+  for (var i = 0; i < list.length; i++) { codes.push(list[i].code); }
+  var url = proxied("https://qt.gtimg.cn/q=" + codes.join(","));
+  xhrGet(url, function (err, txt) {
+    if (err || !txt) {
+      var mh = "";
+      for (var j = 0; j < MOCK.stock.length; j++) {
+        mh += '<tr><td>' + esc(MOCK.stock[j].name) + '</td><td class="td-r">' + MOCK.stock[j].price + '</td><td class="td-r">' + MOCK.stock[j].pct + '</td></tr>';
+      }
+      setBody("stock", '<table class="t">' + mh + '</table><div class="tip">（行情接口加载失败，显示模拟数据）</div>');
+      return;
+    }
+    var html = '<table class="t">';
+    var rows = 0;
+    for (var k = 0; k < list.length; k++) {
+      var s = list[k];
+      var mm2 = txt.match(new RegExp("v_" + s.code + '="([^"]*)"'));
+      if (!mm2) { continue; }
+      var f = mm2[1].split("~");
+      var price = parseFloat(f[3]);
+      var prev = parseFloat(f[4]);
+      if (!isFinite(price) || !isFinite(prev) || !prev) { continue; }
+      var pct = (price - prev) / prev * 100;
+      var arrow = pct >= 0 ? "↑" : "↓";
+      html += '<tr><td>' + esc(s.name) + '</td><td class="td-r">' + price.toFixed(2) + '</td><td class="td-r">' + arrow + ' ' + Math.abs(pct).toFixed(2) + '%</td></tr>';
+      rows++;
+    }
+    html += '</table>';
+    if (!rows) { html += '<div class="tip">（未能解析行情，可检查股票代码）</div>'; }
+    setBody("stock", html);
+  });
+}
+
+/* --- DeepSeek API 余额 --- */
+function renderDeepseek() {
+  var cfg = CONFIG.deepseek;
+  var priceHtml =
+    '<div class="w-sub">单价（元/百万 tokens）</div>' +
+    '<div class="w-sub">输入 ' + esc(String(cfg.priceInPerM)) + ' ｜ 输出 ' + esc(String(cfg.priceOutPerM)) + '</div>';
+  if (!cfg.apiKey && !cfg.manualBalance) {
+    setBody("deepseek",
+      '<div class="err">未配置：请在 CONFIG.deepseek 填写 apiKey 或 manualBalance</div>' + priceHtml);
+    return;
+  }
+  if (!cfg.apiKey) {
+    setBody("deepseek",
+      '<div class="w-main">余额 ' + esc(cfg.manualBalance) + ' 元（手动）</div>' + priceHtml);
+    return;
+  }
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "https://api.deepseek.com/user/balance", true);
+  xhr.setRequestHeader("Authorization", "Bearer " + cfg.apiKey);
+  xhr.setRequestHeader("Accept", "application/json");
+  xhr.timeout = 15000;
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState !== 4) { return; }
+    var balanceHtml = "";
+    if (xhr.status >= 200 && xhr.status < 300) {
+      try {
+        var d = JSON.parse(xhr.responseText);
+        var infos = d.balance_infos || [];
+        var total = 0;
+        for (var i = 0; i < infos.length; i++) { total += parseFloat(infos[i].total_balance) || 0; }
+        var est = Math.floor(total / cfg.priceOutPerM * 1000000);
+        balanceHtml =
+          '<div class="w-main">余额 ' + total.toFixed(2) + ' 元</div>' +
+          '<div class="w-sub">按输出价估算可用约 ' + formatNum(est) + ' tokens</div>';
+      } catch (e) {
+        balanceHtml = '<div class="err">余额解析失败</div>';
+      }
+    } else if (cfg.manualBalance) {
+      balanceHtml = '<div class="err">自动查询失败（HTTP ' + xhr.status + '，多为浏览器 CORS 拦截）</div>' +
+                    '<div class="w-main">余额 ' + esc(cfg.manualBalance) + ' 元（手动）</div>';
+    } else {
+      balanceHtml = '<div class="err">自动查询失败（HTTP ' + xhr.status + '，多为浏览器 CORS 拦截）</div>' +
+                    '<div class="tip">可把余额数字填到 deepseek.manualBalance</div>';
+    }
+    setBody("deepseek", balanceHtml + priceHtml);
+  };
+  xhr.send();
+}
+
+/* --- 倒计时 --- */
+var LS_CNT = "kindle_dash_countdowns_v1";
+
+function loadCountdowns() {
+  try {
+    var s = localStorage.getItem(LS_CNT);
+    if (s) {
+      var arr = JSON.parse(s);
+      if (arr && arr.length) { return arr; }
+    }
+  } catch (e) {}
+  return CONFIG.countdowns;
+}
+
+function saveCountdowns(arr) {
+  try { localStorage.setItem(LS_CNT, JSON.stringify(arr)); } catch (e) {}
+}
+
+function daysUntil(dateStr) {
+  var target = new Date(dateStr + "T00:00:00");
+  var diff = target.getTime() - new Date().getTime();
+  return Math.ceil(diff / 86400000);
+}
+
+function renderCountdown() {
+  var list = loadCountdowns();
+  if (!list.length) { setBody("countdown", '<div class="err">请在 CONFIG.countdowns 添加事项</div>'); return; }
+  var html = "";
+  for (var i = 0; i < list.length; i++) {
+    var d = daysUntil(list[i].date);
+    var txt = d > 0 ? "还有 <span class=\"count-days\">" + d + "</span> 天" :
+              d === 0 ? "就是今天！" : "已过去 " + (-d) + " 天";
+    html += '<div class="count-item">' + esc(list[i].name) + '：' + txt + '</div>';
+  }
+  setBody("countdown", html);
+}
+
+/* --- 待办事项 --- */
+var LS_KEY = "kindle_dash_todo_v1";
+
+function loadTodos() {
+  try {
+    var s = localStorage.getItem(LS_KEY);
+    if (s) {
+      var arr = JSON.parse(s);
+      if (arr && arr.length) { return arr; }
+    }
+  } catch (e) {}
+  return CONFIG.todos;
+}
+
+function saveTodos(arr) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(arr)); } catch (e) {}
+}
+
+function toggleTodo(idx, checked) {
+  var arr = loadTodos();
+  if (arr[idx]) {
+    arr[idx].done = checked;
+    saveTodos(arr);
+    renderTodo();
+  }
+}
+
+function renderTodo() {
+  var arr = loadTodos();
+  if (!arr.length) { setBody("todo", '<div class="err">请在 CONFIG.todos 添加任务</div>'); return; }
+  var done = 0;
+  var html = "";
+  for (var i = 0; i < arr.length; i++) {
+    if (arr[i].done) { done++; }
+    var cls = arr[i].done ? ' class="todo-done"' : "";
+    html += '<div class="todo-item"><input type="checkbox" ' + (arr[i].done ? "checked " : "") +
+            'onchange="toggleTodo(' + i + ', this.checked)"><span' + cls + '> ' + esc(arr[i].text) + '</span></div>';
+  }
+  var pct = Math.round(done / arr.length * 100);
+  var filled = "";
+  for (var j = 0; j < 10; j++) { filled += j < Math.round(pct / 10) ? "#" : "-"; }
+  html += '<div class="bar">进度 ' + filled + ' ' + pct + '%（' + done + '/' + arr.length + '）</div>';
+  setBody("todo", html);
+}
+
+/* --- 每日一图 --- */
+function getCookie(name) {
+  var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+  return m ? decodeURIComponent(m[1]) : "";
+}
+
+function setCookie(name, val) {
+  document.cookie = name + "=" + encodeURIComponent(val) + "; path=/";
+}
+
+function todayStr() {
+  var n = new Date();
+  return n.getFullYear() + "-" + pad(n.getMonth() + 1) + "-" + pad(n.getDate());
+}
+
+function renderWallpaper() {
+  var cached = getCookie("kindle_wall");
+  if (cached) {
+    var parts = cached.split("|");
+    if (parts.length === 2 && parts[0] === todayStr()) {
+      setBody("wallpaper", '<img class="wall" src="' + esc(parts[1]) + '"><div class="wall-cap">今日壁纸（已缓存）</div>');
+      return;
+    }
+  }
+  function showImg(url, cap) {
+    setCookie("kindle_wall", todayStr() + "|" + url);
+    setBody("wallpaper", '<img class="wall" src="' + esc(url) + '"><div class="wall-cap">' + esc(cap || "") + '</div>');
+  }
+  if (CONFIG.wallpaperUrl) {
+    showImg(CONFIG.wallpaperUrl, "自定义壁纸");
+    return;
+  }
+  var bingApi = "https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1";
+  jsonGet(proxied(bingApi), function (err, d) {
+    if (!err && d && d.images && d.images[0]) {
+      showImg("https://www.bing.com" + d.images[0].url, d.images[0].copyright || "必应每日壁纸");
+    } else {
+      setBody("wallpaper", '<div class="err">壁纸加载失败（可填 wallpaperUrl 图片直链）</div>');
+    }
+  });
+}
+
+/* --- 每日一言 --- */
+function renderQuote() {
   var now = new Date();
   var day = Math.floor(now.getTime() / 86400000);
-  return arr[day % arr.length];
+  setBody("quote", '<div class="quote-box">“' + esc(QUOTES[day % QUOTES.length]) + '”</div>');
 }
 
-function renderData() {
-  document.getElementById("weatherMain").textContent =
-    WEATHER.city + "  " + WEATHER.cond + "  " + WEATHER.temp;
-  document.getElementById("weatherDetail").textContent =
-    "湿度 " + WEATHER.hum + " ｜ " + WEATHER.wind;
-  document.getElementById("forecast").textContent = WEATHER.forecast.join("\n");
+/* --- 网页编辑倒计时与待办 --- */
+var EDITING = false;
+var ED_CNT = null;
+var ED_TODO = null;
 
-  var list = document.getElementById("newsList");
-  var html = "";
-  for (var i = 0; i < NEWS.length; i++) {
-    html += "<li><span class=\"news-time\">[" + NEWS[i].time + "]</span> " + NEWS[i].title + "</li>";
+function toggleEdit(force) {
+  EDITING = (force !== undefined) ? force : !EDITING;
+  var p = $("editPanel");
+  var b = $("editBtn");
+  if (p) { p.style.display = EDITING ? "block" : "none"; }
+  if (b) { b.textContent = EDITING ? "完成编辑" : "编辑"; }
+  if (EDITING) {
+    ED_CNT = loadCountdowns();
+    ED_TODO = loadTodos();
+    buildEditRows();
   }
-  list.innerHTML = html;
-
-  document.getElementById("btcPrice").textContent = CRYPTO.btc.price;
-  document.getElementById("btcChg").textContent  = "24h " + CRYPTO.btc.chg;
-  document.getElementById("ethPrice").textContent = CRYPTO.eth.price;
-  document.getElementById("ethChg").textContent  = "24h " + CRYPTO.eth.chg;
-
-  document.getElementById("quote").textContent = "“" + pickByDay(QUOTES) + "”";
 }
 
-/* ========== 时钟 & 倒计时 ========== */
+function buildEditRows() {
+  var h = "";
+  for (var i = 0; i < ED_CNT.length; i++) {
+    h += '<div class="edit-row">名称 <input id="cntn' + i + '" value="' + escAttr(ED_CNT[i].name) + '"> ' +
+         '日期 <input class="d" id="cntd' + i + '" value="' + escAttr(ED_CNT[i].date) + '"> ' +
+         '<button onclick="delCnt(' + i + ')">删除</button></div>';
+  }
+  $("editCount").innerHTML = h;
+
+  var t = "";
+  for (var j = 0; j < ED_TODO.length; j++) {
+    t += '<div class="edit-row"><input class="cb" type="checkbox" ' + (ED_TODO[j].done ? "checked " : "") +
+         'id="tdc' + j + '"> <input id="tdt' + j + '" value="' + escAttr(ED_TODO[j].text) + '"> ' +
+         '<button onclick="delTodo(' + j + ')">删除</button></div>';
+  }
+  $("editTodo").innerHTML = t;
+}
+
+function addCnt() {
+  ED_CNT.push({ name: "新倒计时", date: "2026-12-31" });
+  buildEditRows();
+}
+
+function delCnt(i) {
+  ED_CNT.splice(i, 1);
+  buildEditRows();
+}
+
+function addTodo() {
+  ED_TODO.push({ text: "新任务", done: false });
+  buildEditRows();
+}
+
+function delTodo(i) {
+  ED_TODO.splice(i, 1);
+  buildEditRows();
+}
+
+function saveEdits() {
+  var cnts = [];
+  for (var i = 0; i < ED_CNT.length; i++) {
+    var n = $("cntn" + i).value.replace(/^\s+|\s+$/g, "");
+    var d = $("cntd" + i).value.replace(/^\s+|\s+$/g, "");
+    if (!n || !/^\d{4}-\d{2}-\d{2}$/.test(d)) { continue; }
+    cnts.push({ name: n, date: d });
+  }
+  saveCountdowns(cnts);
+
+  var todos = [];
+  for (var j = 0; j < ED_TODO.length; j++) {
+    var txt = $("tdt" + j).value.replace(/^\s+|\s+$/g, "");
+    if (!txt) { continue; }
+    todos.push({ text: txt, done: $("tdc" + j).checked });
+  }
+  saveTodos(todos);
+
+  renderCountdown();
+  renderTodo();
+  toggleEdit(false);
+  cloudPush(function (err, msg) { showCloud(err ? "云端同步失败" : msg); });
+}
+
+function resetEdits() {
+  try {
+    localStorage.removeItem(LS_CNT);
+    localStorage.removeItem(LS_KEY);
+  } catch (e) {}
+  ED_CNT = loadCountdowns();
+  ED_TODO = loadTodos();
+  buildEditRows();
+  renderCountdown();
+  renderTodo();
+  cloudPush(function (err, msg) { showCloud(err ? "云端同步失败" : msg); });
+}
+
+/* --- 多设备同步（jsonblob，无需注册，国内一般可访问） --- */
+var JB_KEY = "kindle_dash_jsonblob_id";
+
+function jbId() {
+  var c = CONFIG.jsonblob;
+  if (c && c.blobId) { return c.blobId; }
+  try {
+    var s = localStorage.getItem(JB_KEY);
+    if (s) { return s; }
+  } catch (e) {}
+  return "";
+}
+
+function jbSaveId(id) {
+  try { localStorage.setItem(JB_KEY, id); } catch (e) {}
+}
+
+function jbRequest(method, url, body, done) {
+  var xhr = new XMLHttpRequest();
+  xhr.open(method, url, true);
+  if (body) { xhr.setRequestHeader("Content-Type", "application/json"); }
+  xhr.timeout = 15000;
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4) {
+      if (xhr.status >= 200 && xhr.status < 300) { done(null, xhr); }
+      else { done(new Error("HTTP " + xhr.status)); }
+    }
+  };
+  xhr.ontimeout = function () { done(new Error("timeout")); };
+  xhr.onerror = function () { done(new Error("network")); };
+  xhr.send(body || null);
+}
+
+function jbExtractId(loc) {
+  if (!loc) { return ""; }
+  var m = loc.match(/([A-Za-z0-9_-]+)\s*$/);
+  return m ? m[1] : "";
+}
+
+function cloudPush(cb) {
+  var body = JSON.stringify({ countdowns: loadCountdowns(), todos: loadTodos() });
+  var id = jbId();
+  if (id) {
+    jbRequest("PUT", "https://jsonblob.com/api/jsonBlob/" + id, body, function (err) {
+      if (err) { cb(err); return; }
+      cb(null, "已同步云端");
+    });
+    return;
+  }
+  jbRequest("PUT", "https://jsonblob.com/api/jsonBlob", body, function (err, xhr) {
+    if (err) { cb(err); return; }
+    var newId = jbExtractId(xhr.getResponseHeader("Location"));
+    if (!newId) { cb(new Error("云端未返回ID")); return; }
+    jbSaveId(newId);
+    cb(null, "已同步云端（ID: " + newId + "，请填入 jsonblob.blobId 并重新上传，其他设备才能同步）");
+  });
+}
+
+function cloudPull(cb) {
+  var id = jbId();
+  if (!id) { cb(null, ""); return; }
+  jbRequest("GET", "https://jsonblob.com/api/jsonBlob/" + id, null, function (err, xhr) {
+    if (err) { cb(err); return; }
+    try {
+      var rec = JSON.parse(xhr.responseText);
+      if (rec.countdowns && rec.countdowns.length) { saveCountdowns(rec.countdowns); }
+      if (rec.todos && rec.todos.length) { saveTodos(rec.todos); }
+      cb(null, "已从云端同步");
+    } catch (e) { cb(e); }
+  });
+}
+
+function showCloud(msg) {
+  var st = $("cloudStatus");
+  if (st) { st.textContent = msg || ""; }
+}
+
+/* ================================================================
+   五、网格布局与模块分发
+   新增模块：1) modules 加开关  2) 写 renderXxx()  3) dispatch 加一行
+   ================================================================ */
+function renderModule(id) {
+  var title = CONFIG.modules[id].title;
+  return panelHtml(title, '<div id="mod-' + id + '">加载中…</div>');
+}
+
+function dispatch(id) {
+  if (id === "clock") { renderClock(); }
+  else if (id === "weather") { renderWeather(); }
+  else if (id === "feeds") { renderFeeds(); }
+  else if (id === "stock") { renderStock(); }
+  else if (id === "deepseek") { renderDeepseek(); }
+  else if (id === "countdown") { renderCountdown(); }
+  else if (id === "todo") { renderTodo(); }
+  else if (id === "wallpaper") { renderWallpaper(); }
+  else if (id === "quote") { renderQuote(); }
+}
+
+function buildGrid() {
+  var active = [];
+  var order = CONFIG.moduleOrder;
+  for (var i = 0; i < order.length; i++) {
+    var m = CONFIG.modules[order[i]];
+    if (m && m.on && order[i] !== "clock") { active.push(order[i]); }
+  }
+  var html = '<table class="grid">';
+  for (var j = 0; j < active.length; j += 2) {
+    html += '<tr>';
+    html += '<td class="cell">' + renderModule(active[j]) + '</td>';
+    if (j + 1 < active.length) {
+      html += '<td class="cell">' + renderModule(active[j + 1]) + '</td>';
+    } else {
+      html += '<td class="cell"></td>';
+    }
+    html += '</tr>';
+  }
+  html += '</table>';
+  $("grid").innerHTML = html;
+  for (var k = 0; k < active.length; k++) { dispatch(active[k]); }
+}
+
+/* ================================================================
+   六、时钟秒针 + 刷新倒计时 + 30 分钟自动刷新
+   ================================================================ */
 var START = Date.now();
 
 function tick() {
-  var now = new Date();
-  var h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
-  document.getElementById("clock").textContent = pad(h) + ":" + pad(m) + ":" + pad(s);
-
-  var week = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
-  document.getElementById("date").textContent =
-    now.getFullYear() + "年" + (now.getMonth() + 1) + "月" + now.getDate() + "日 " + week[now.getDay()];
-
-  var remain = REFRESH_MS - ((Date.now() - START) % REFRESH_MS);
+  if (CONFIG.modules.clock && CONFIG.modules.clock.on) { renderClock(); }
+  var remain = CONFIG.refreshMs - ((Date.now() - START) % CONFIG.refreshMs);
   var mm = Math.floor(remain / 60000);
   var ss = Math.floor((remain % 60000) / 1000);
-  document.getElementById("countdown").textContent = pad(mm) + ":" + pad(ss);
+  $("countdown").textContent = pad(mm) + ":" + pad(ss);
 }
 
-setInterval(tick, CLOCK_MS);
+setInterval(tick, CONFIG.clockMs);
 
-/* ========== 30 分钟自动刷新 ==========
-   说明：刷新整页会让屏幕闪一下，属正常现象。
-   若个别固件的浏览器不执行 JS 定时刷新，
-   可删掉上面的 setTimeout，改用这一行替代：
-   <meta http-equiv="refresh" content="1800">
- */
 setTimeout(function () {
-  location.reload();
-}, REFRESH_MS);
+  var sep = location.href.indexOf("?") >= 0 ? "&" : "?";
+  location.href = location.href.split("#")[0] + sep + "v=" + Date.now();
+}, CONFIG.refreshMs);
 
-/* ========== 初始化 ========== */
+/* ================================================================
+   七、初始化
+   ================================================================ */
 function init() {
   var now = new Date();
-  document.getElementById("lastUpdate").textContent =
-    pad(now.getHours()) + ":" + pad(now.getMinutes());
-  renderData();
+  $("lastUpdate").textContent = pad(now.getHours()) + ":" + pad(now.getMinutes());
+  var v = $("appVer");
+  if (v) { v.textContent = APP_VERSION; }
+  buildGrid();
   tick();
+  if (CONFIG.modules.clock && !CONFIG.modules.clock.on) { $("clockBox").innerHTML = ""; }
+  cloudPull(function (err, msg) {
+    if (err) { showCloud("云端同步失败"); }
+    else if (msg) {
+      renderCountdown();
+      renderTodo();
+      showCloud(msg);
+    }
+  });
 }
 init();
-
-/* ========== 以后接入真实 API（可选） ==========
-   把 renderData() 里取数改为请求 JSON 即可，例如：
-
-   var xhr = new XMLHttpRequest();
-   xhr.open("GET", "https://api.example.com/dashboard.json", true);
-   xhr.onload = function () {
-     if (xhr.status === 200) {
-       // var data = JSON.parse(xhr.responseText);
-       // 用 data 覆盖 WEATHER / NEWS / CRYPTO 后调用 renderData();
-     }
-   };
-   xhr.send();
-*/
 </script>
 </body>
 </html>

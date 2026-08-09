@@ -1,53 +1,129 @@
-# Kindle PW6 免越狱信息仪表盘（AiDash）
+# Kindle PW6 免越狱信息仪表盘（AiDash v3）
 
-为 Kindle Paperwhite 6（PW6，1072×1448 灰阶屏）设计的单文件网页仪表盘：
+为 Kindle Paperwhite 6（PW6，1072×1448 灰阶屏）设计的单文件网页仪表盘。所有内容在 `index.html` 顶部的 `CONFIG` 配置区修改，无需懂代码。
 
-- 实时时钟（每秒更新）
-- 当天日期与星期
-- 模拟天气、新闻、比特币/以太坊价格、每日名言
-- 每 30 分钟自动刷新（JS `location.reload()`）
-- 无外部资源，单文件约 15KB，一天流量约 0.7MB
+## 功能与模块
 
-## 文件
+| 模块 | 内容 | 数据来源 |
+|---|---|---|
+| 时钟 | 可爱风格时钟（每秒更新）+ 问候语 | 本机时间 |
+| 天气预报 | 实时天气 + 未来三天预报 | OpenWeather（需免费 Key） |
+| 国内内容 | B站热搜 / 知乎热榜 / 微博热搜 / B站UP主动态 | 对应平台接口 + CORS 代理 |
+| 股市大盘 | 上证、深成、创业板、恒生等指数 | 腾讯行情接口（免费无 Key） |
+| DeepSeek 余额 | 余额 + 单价 + 按输出价估算可用 tokens | DeepSeek 官方接口（或手动填写） |
+| 重要倒计时 | 自定义日期倒数 | 你填的日期 |
+| 待办事项 | 可勾选任务 + 进度条，状态自动保存 | 浏览器缓存 |
+| 每日一图 | 必应每日壁纸或自定义图片直链 | Bing / 自定义 URL |
+| 每日一言 | 每日一句名言 | 内置列表 |
 
-- `index.html` —— 完整仪表盘页面（部署到 GitHub Pages 时放在仓库根目录）
+## 一、必须配置的内容
 
-## 一、托管到 GitHub Pages
+### 1. 天气（默认 Open-Meteo，完全免费、无需注册和 Key）
 
-1. 打开 github.com，注册/登录后点右上角 `+` → New repository。
-2. 仓库名填 `kindle-dashboard`，选 Public，点 Create repository。
-3. 进入仓库 → Add file → Upload files → 上传 `index.html` → Commit changes。
-   - 命令行方式：`git clone https://github.com/你的用户名/kindle-dashboard.git`，放入 `index.html` 后执行
-     `git add .`、`git commit -m "add dashboard"`、`git push`。
-4. 启用 Pages：仓库 → Settings → Pages → Source 选 “Deploy from a branch” → Branch 选 `main`、目录选 `/ (root)` → Save。
-5. 等 1~2 分钟，电脑浏览器访问 `https://你的用户名.github.io/kindle-dashboard/` 验证。
-   - 例如用户名为 `abc`，网址为 `https://abc.github.io/kindle-dashboard/`（大小写敏感）。
+方案 A：Open-Meteo（默认，推荐）
 
-## 二、Kindle 访问
+- 什么都不用填。`weatherApi` 保持 `"openmeteo"`，`weatherLat` / `weatherLon` 填你所在城市的经纬度（已默认温州 27.99,120.70；上海 31.23,121.47；北京 39.90,116.41）。
+
+方案 B：OpenWeather（免费 Key）
+
+1. 到 https://openweathermap.org 免费注册，My API keys 复制 Key，填进 `openWeatherKey`，`city` 填英文拼音。
+2. `weatherApi` 改成 `"openweather"`，`openweatherUseProxy` 保持 `true`（走 CORS 代理，国内网络才能访问）。
+3. 新 Key 最长需等约 2 小时激活；代理偶尔不稳定，失败时页面会显示提示。
+
+方案 C：和风天气（可选，免费个人版需实名认证）
+
+- 填 `qweatherKey` 和 `qweatherLocation`（温州 101210701），`weatherApi` 改成 `"qweather"`。
+
+### 2. 股市大盘（默认已配好，无需 Key）
+
+默认显示上证、深成、创业板、恒生。想加纳斯达克/道琼斯，在 `stocks` 里加：
+
+```js
+{ name: "纳斯达克", code: "usIXIC" }
+```
+
+### 3. DeepSeek 余额
+
+在 `deepseek` 里填：
+
+- `apiKey`：你的 DeepSeek API Key。
+- `priceInPerM` / `priceOutPerM`：当前单价（元/百万 tokens）。2026-08 官方预告新价：V4-Flash 输入 1 / 输出 2；V4-Pro 输入 3 / 输出 6（缓存命中更便宜）。**价格会变，以 DeepSeek 官网为准。**
+- `manualBalance`：如果浏览器直连 DeepSeek 被 CORS 拦截（大概率会发生），把余额数字手动填这里兜底。
+
+两个重要限制：
+
+- DeepSeek 官方**没有“查某个 Key 已用多少 token”的接口**，只能查余额。页面显示的是余额和“按输出单价估算还能用多少 tokens”，不是真实用量统计。
+- **公开网页里填 API Key 有泄露风险**。GitHub Pages 是公开仓库，任何人都能看到你的 Key。建议：使用后去 DeepSeek 后台删除/重置该 Key；或者把 `manualBalance` 手动填数字代替填 Key。
+- **`manualBalance` 是手动填的静态数字，不会自动更新**。想自动更新只能填 `apiKey`（余额每次刷新自动查）；填 `manualBalance` 的话，余额变了需要手动改文件里的数字再上传。
+
+### 4. 国内内容源
+
+默认已配置 B站热搜、知乎热榜、微博热搜。
+
+- 想看 B站UP主动态：在 `bilibiliUids` 里按行添加，每行一个：`{ name: "显示名", uid: "UP主UID" }`。UID 获取：B站网页打开UP主主页，地址栏 `space.bilibili.com/` 后面的数字。想加几个就加几行。
+- 小红书：**没有公开接口**，博主内容无法直接抓取（需要自建 RSSHub 并配置小红书 Cookie，对新手不现实）。以后若自建成功，把生成的 RSS 地址填进 `xiaohongshuRssUrl`；否则建议关注博主是否同步发布到 B站/微博/公众号。
+- 想加任意 RSS：在 `feeds` 里加 `{ name: "标题", type: "rss", url: "https://example.com/feed", count: 3 }`。
+
+### 5. 倒计时与待办
+
+- `countdowns`：`{ name: "名称", date: "YYYY-MM-DD" }`。
+- `todos`：`{ text: "内容", done: false }`；页面勾选后状态会记住。
+
+## 二、部署（重新上传）
+
+1. 打开 `index.html` 填好配置后保存。
+2. 上传覆盖到 GitHub 仓库：
+   - 网页方式：仓库页面 → Add file → Upload files → 选择本机 `index.html` → Commit changes。
+   - 命令行：`git add index.html` → `git commit -m "update dashboard v3"` → `git push`。
+3. 无需任何设置，等 1~3 分钟 Pages 自动更新。
+4. 电脑打开 `https://你的用户名.github.io/kindle-dash/` 验证。
+5. Kindle 浏览器若显示旧页面：浏览器菜单里清缓存后重新打开。
+
+## 三、Kindle 访问与常亮
 
 1. 设置 → Wi-Fi 与蓝牙 → 连接 Wi-Fi。
-2. 主页右上角 `⋮` 菜单 → 体验版网页浏览器。
-3. 点底部地址栏，输入完整网址（含 `https://`），回车加载。
-4. 若页面被重排成“文章模式”（正文简化、JS 失效），点浏览器工具栏的“网页模式”按钮切回；再进浏览器菜单 → 设置，确认“启用 JavaScript”已开启。
+2. 主页右上角 `⋮` → 体验版网页浏览器 → 输入 `https://你的用户名.github.io/kindle-dash/`。
+3. 若被重排成“文章模式”，点“网页模式”按钮切回，确认“启用 JavaScript”已开。
+4. 主页搜索框输入 `~ds` 回车禁用休眠（重启后失效需重输）。
 
-## 三、保持屏幕常亮（关键）
+## 四、在网页上直接编辑倒计时与待办
 
-1. 回 Kindle 主页，点顶部搜索框，输入 `~ds`，回车。
-   - 无任何提示是正常的；此时按电源键无法休眠，即已生效。
-   - 效果持续到下次重启，重启后需重新输入。
-2. 附加设置：设置 → 设备选项 → 高级选项 → 省电模式 → 关闭。
-   - 注意：关闭省电模式只是让唤醒更快，**不能**阻止休眠；真正防休眠的是 `~ds`。
-3. 若 `~ds` 在你的固件上无效（个别新固件被移除该命令），官方设置里没有“永不锁屏”选项，只能每隔约 10 分钟点一下屏幕，或等待越狱方案。
-4. 建议插着充电器使用；e-ink 静态画面几乎不耗电，耗电集中在每 30 分钟刷新瞬间。
+1. 打开仪表盘页面，点底部“**编辑**”按钮。
+2. 在弹出的编辑区里：改名字和日期、点“删除”删掉一行、点“+ 添加倒计时 / + 添加待办”新增一行。
+3. 点“**保存**”生效；点“**恢复默认**”清空本机修改、回到文件里配置的内容。
+4. 说明：
+   - 编辑结果保存在这台设备的浏览器缓存里，**以后不用再改文件、重新上传**。
+   - 只在保存的那台设备生效（Kindle 上改的只影响 Kindle）。
+   - 清除浏览器缓存会丢失去编辑结果，恢复成文件里的默认配置。
+   - 天气、内容源、股票、DeepSeek 等模块仍需要在文件里改（涉及 API Key，不适合放网页上编辑）。
 
-## 四、验证清单
+### 为什么网页编辑不能自动更新 GitHub 仓库里的文件？
 
-- 电脑打开网址：时钟每秒走动、日期正确、倒计时递减、四个板块齐全、无横向滚动。
-- Kindle 打开：整页一屏显示（内容高度约 1116px < 1448px），30 分钟后自动刷新（观察“上次更新”时间变化）。
-- `~ds` 验证：输入后按电源键不进入屏保；重启后屏保恢复。
+GitHub Pages 是静态托管，网页里的 JavaScript 没有权限写你的仓库。想让网页自动改仓库文件，只能把 GitHub 的写权限令牌放进公开页面——那样任何人都能改你的仓库，风险极大，不建议。所以网页编辑结果默认保存在本机浏览器里。
 
-## 注意事项
+### 可选：jsonblob 多设备同步（无需注册）
 
-- 天气、新闻、价格为模拟数据；未来接真实 API 时需使用支持 HTTPS 且允许 CORS 的接口（代码末尾有 `XMLHttpRequest` 示例）。
-- 网页无法调用系统 API 阻止休眠，屏幕常亮依赖 `~ds` 命令的可用性。
-- 想更省电，可把 `index.html` 中 `CLOCK_MS` 从 `1000` 改为 `10000`（时钟每 10 秒更新）。
+想让 Kindle 和电脑看到同一份倒计时/待办：
+
+1. 打开仪表盘页面 → 点“编辑” → 改好内容 → 点“保存”。第一次保存时底部会显示“已同步云端（ID: xxxxx）”。
+2. 把那个 ID 填进 `index.html` 的 `jsonblob.blobId`，重新上传。
+3. 之后所有设备打开页面时会自动读取云端同一份数据；再点保存就是更新。
+
+说明：jsonblob 免费、无需注册、国内一般可访问。ID 相当于这份数据的钥匙，知道 ID 的人能读写这份数据——里面只有倒计时和待办，没有敏感信息，风险可接受。不配置则编辑只保存在本机浏览器。
+
+## 五、常见问题
+
+- **新闻/内容源加载失败**：国内网络访问 Google News 或代理不稳定。`proxy` 可换成 `https://corsproxy.io/?url=`；B站热搜若失败可把 `feeds` 里的源换成其它 RSS。
+- **行情显示模拟数据**：腾讯接口 `qt.gtimg.cn` 若被代理拦截，会退回模拟数据并提示；可尝试更换 `proxy`。
+- **DeepSeek 显示“CORS 拦截”**：正常现象，把余额手动填进 `manualBalance`。
+- **壁纸不显示**：必应被墙时把 `wallpaperUrl` 填成任意图片直链。
+- **页面超出一屏**：把某个模块的 `on` 改成 `false`。
+- **天气报错**：国内优先用和风天气（填 `qweatherKey` + 城市 ID）；新 Key 需要等待激活；若坚持 OpenWeather，确认 Key 完整、`city` 用英文拼音、网络能访问 openweathermap.org。
+- **本地直接双击 index.html 打开时接口全部失败**：浏览器安全策略会拦截跨域请求，属正常。本地测试请在文件所在文件夹的终端运行 `python -m http.server 8000`（启动一个本地测试服务器），然后访问 `http://localhost:8000`；正式使用以 GitHub Pages 的 https 网址为准。
+- **上传后打开还是旧版本**：先看页面底部“版本”是否显示 `v5-20260810`。若不是：① 电脑上按 Ctrl+F5 强制刷新，或网址后面加 `?v=1` 打开；② 等 2~3 分钟让 Pages 更新；③ 确认仓库里 index.html 在根目录、提交时间是刚刚；④ Kindle 上清浏览器缓存后再开。新版每 30 分钟自动刷新时会自动带新参数绕过缓存。
+
+## 六、验证清单
+
+- 电脑打开网址：天气为真实数据、三天预报有内容、大盘指数有真实点位、内容源有标题、DeepSeek 显示余额或手动值。
+- Kindle 打开：一屏显示、30 分钟后自动刷新（看“上次更新”变化）。
+- 输入 `~ds` 后按电源键不进入屏保。
