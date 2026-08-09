@@ -232,7 +232,7 @@
 /* ================================================================
    一、配置区（改这里即可，不需要动下面的代码）
    ================================================================ */
-var APP_VERSION = "v5-20260810";   // 页面版本号，上传后用来判断网页是否已更新
+var APP_VERSION = "v6-20260810";   // 页面版本号，上传后用来判断网页是否已更新
 
 var CONFIG = {
   refreshMs: 30 * 60 * 1000,   // 整页刷新间隔
@@ -253,11 +253,15 @@ var CONFIG = {
   qweatherKey: "",
   qweatherLocation: "101210701",
 
-  /* --- CORS 代理：把不允许跨域的数据接口转成可访问 ---
-     国内网络若失败，可换成 https://corsproxy.io/?url= */
-  proxy: "https://api.allorigins.win/raw?url=",
+  /* --- CORS 代理列表：按顺序逐个尝试，哪个通就用哪个 ---
+     国内网络下 allorigins 可能不通，可自行把能用的代理加进来。 */
+  proxies: [
+    "https://api.allorigins.win/raw?url=",
+    "https://corsproxy.io/?url=",
+    "https://api.codetabs.com/v1/proxy?quest="
+  ],
 
-  /* --- 股市大盘行情（腾讯行情接口，免费无需 Key）---
+  /* --- 股市大盘行情（东方财富直连，国内稳定；失败自动切腾讯）---
      支持 A 股、港股、美股指数：
      上证指数 sh000001 / 深证成指 sz399001 / 创业板指 sz399006 /
      恒生指数 hkHSI / 纳斯达克 usIXIC / 道琼斯 usDJI */
@@ -329,12 +333,12 @@ var CONFIG = {
   ],
 
   /* --- 多设备云端同步（可选，无需注册）---
-     jsonblob：免费 JSON 云存储，不用注册、不用 Key，国内一般可访问。
-     用法：先在任意设备打开页面 → 编辑 → 保存，底部会显示“云端ID: xxxxx”，
-     把 ID 填到下面 blobId 并重新上传，之后所有设备共用它同步。
-     不填则编辑只保存在本机浏览器。 */
+     jsonblob：免费 JSON 云存储，不用注册、不用 Key。
+     已内置固定 blobId，所有设备共用它同步：编辑 → 保存 即写入云端，
+     打开页面自动读取。若保存时底部显示“云端同步失败”，说明当前网络
+     访问不了 jsonblob，跳过即可（编辑仍保存在本机浏览器）。 */
   jsonblob: {
-    blobId: ""
+    blobId: "kddash-8f3a2c1e9b47d605"
   },
 
   /* --- 每日一图：留空用必应每日壁纸，或填任意图片直链 --- */
@@ -420,7 +424,32 @@ function jsonGet(url, done) {
   });
 }
 
-function proxied(u) { return CONFIG.proxy + encodeURIComponent(u); }
+function fetchViaProxies(url, done) {
+  var proxies = CONFIG.proxies || [];
+  var idx = 0;
+  function next() {
+    if (idx >= proxies.length) { done(new Error("所有代理都失败")); return; }
+    var p = proxies[idx++];
+    xhrGet(p + encodeURIComponent(url), function (err, txt) {
+      if (err) { next(); return; }
+      done(null, txt);
+    });
+  }
+  next();
+}
+
+function jsonViaProxies(url, done) {
+  fetchViaProxies(url, function (err, txt) {
+    if (err) { done(err); return; }
+    try { done(null, JSON.parse(txt)); }
+    catch (e) { done(e); }
+  });
+}
+
+function jsonGetSmart(url, done) {
+  if (CONFIG.openweatherUseProxy) { jsonViaProxies(url, done); }
+  else { jsonGet(url, done); }
+}
 
 function decodeEntities(s) {
   return s
@@ -504,13 +533,9 @@ function renderOpenWeather() {
   var q = encodeURIComponent(CONFIG.city);
   var curUrl = "https://api.openweathermap.org/data/2.5/weather?q=" + q + "&appid=" + key + "&units=metric&lang=zh_cn";
   var fcUrl = "https://api.openweathermap.org/data/2.5/forecast?q=" + q + "&appid=" + key + "&units=metric&lang=zh_cn";
-  if (CONFIG.openweatherUseProxy) {
-    curUrl = proxied(curUrl);
-    fcUrl = proxied(fcUrl);
-  }
   setBody("weather", '<div class="w-main">加载中…</div><div class="w-fc"></div>');
 
-  jsonGet(curUrl, function (err, d) {
+  jsonGetSmart(curUrl, function (err, d) {
     if (err || !d || !d.main) {
       setBody("weather", '<div class="err">天气加载失败（' + esc(err ? err.message : "无数据") + '），国内网络建议改用和风天气</div>');
       return;
@@ -521,7 +546,7 @@ function renderOpenWeather() {
       '<div class="w-sub">湿度 ' + Math.round(d.main.humidity) + '% ｜ 体感 ' + Math.round(d.main.feels_like) + '°C</div>' +
       '<div class="w-fc" id="fcBody">三天预报加载中…</div>');
 
-    jsonGet(fcUrl, function (err2, d2) {
+    jsonGetSmart(fcUrl, function (err2, d2) {
       var fcEl = $("fcBody");
       if (err2 || !d2 || !d2.list) {
         if (fcEl) { fcEl.textContent = "（三天预报加载失败）"; }
@@ -666,12 +691,12 @@ function parseRss(xmlText) {
 
 function feedTitles(feed, cb) {
   if (feed.type === "rss") {
-    xhrGet(proxied(feed.url), function (err, txt) {
+    fetchViaProxies(feed.url, function (err, txt) {
       if (err || !txt) { cb(null, []); return; }
       cb(null, parseRss(txt));
     });
   } else if (feed.type === "json") {
-    jsonGet(proxied(feed.url), function (err, data) {
+    jsonViaProxies(feed.url, function (err, data) {
       if (err || !data) { cb(null, []); return; }
       var arr = getPath(data, feed.listPath);
       if (!arr || !arr.length) { cb(null, []); return; }
@@ -734,41 +759,87 @@ function renderFeeds() {
   }
 }
 
-/* --- 股市大盘（腾讯行情接口） --- */
-function renderStock() {
-  var list = CONFIG.stocks;
-  if (!list.length) { setBody("stock", '<div class="err">请在 CONFIG.stocks 添加指数</div>'); return; }
+/* --- 股市大盘：东方财富直连（国内）优先，失败自动切腾讯代理 --- */
+function emSecid(code) {
+  if (code === "sh000001") { return "1.000001"; }
+  if (code === "sz399001") { return "0.399001"; }
+  if (code === "sz399006") { return "0.399006"; }
+  if (code === "hkHSI") { return "100.HSI"; }
+  if (code === "usIXIC") { return "100.NDX"; }
+  if (code === "usDJI") { return "100.DJI"; }
+  if (code === "usINX") { return "100.SPX"; }
+  return "";
+}
+
+function stockTable(list, rows) {
+  var html = '<table class="t">';
+  var count = 0;
+  for (var i = 0; i < list.length; i++) {
+    var r = rows[i];
+    if (!r || r.price === undefined || r.price === null || isNaN(r.price)) { continue; }
+    var pct = r.pct || 0;
+    var arrow = pct >= 0 ? "↑" : "↓";
+    html += '<tr><td>' + esc(list[i].name) + '</td><td class="td-r">' + Number(r.price).toFixed(2) +
+            '</td><td class="td-r">' + arrow + ' ' + Math.abs(pct).toFixed(2) + '%</td></tr>';
+    count++;
+  }
+  html += '</table>';
+  return { html: html, count: count };
+}
+
+function showStockMock() {
+  var mh = "";
+  for (var j = 0; j < MOCK.stock.length; j++) {
+    mh += '<tr><td>' + esc(MOCK.stock[j].name) + '</td><td class="td-r">' + MOCK.stock[j].price + '</td><td class="td-r">' + MOCK.stock[j].pct + '</td></tr>';
+  }
+  setBody("stock", '<table class="t">' + mh + '</table><div class="tip">（行情接口暂不可达，显示模拟数据）</div>');
+}
+
+function renderStockTencent(list) {
   var codes = [];
   for (var i = 0; i < list.length; i++) { codes.push(list[i].code); }
-  var url = proxied("https://qt.gtimg.cn/q=" + codes.join(","));
-  xhrGet(url, function (err, txt) {
-    if (err || !txt) {
-      var mh = "";
-      for (var j = 0; j < MOCK.stock.length; j++) {
-        mh += '<tr><td>' + esc(MOCK.stock[j].name) + '</td><td class="td-r">' + MOCK.stock[j].price + '</td><td class="td-r">' + MOCK.stock[j].pct + '</td></tr>';
-      }
-      setBody("stock", '<table class="t">' + mh + '</table><div class="tip">（行情接口加载失败，显示模拟数据）</div>');
-      return;
-    }
-    var html = '<table class="t">';
-    var rows = 0;
+  fetchViaProxies("https://qt.gtimg.cn/q=" + codes.join(","), function (err, txt) {
+    if (err || !txt) { showStockMock(); return; }
+    var rows = [];
     for (var k = 0; k < list.length; k++) {
-      var s = list[k];
-      var mm2 = txt.match(new RegExp("v_" + s.code + '="([^"]*)"'));
-      if (!mm2) { continue; }
+      var mm2 = txt.match(new RegExp("v_" + list[k].code + '="([^"]*)"'));
+      if (!mm2) { rows.push(null); continue; }
       var f = mm2[1].split("~");
       var price = parseFloat(f[3]);
       var prev = parseFloat(f[4]);
-      if (!isFinite(price) || !isFinite(prev) || !prev) { continue; }
-      var pct = (price - prev) / prev * 100;
-      var arrow = pct >= 0 ? "↑" : "↓";
-      html += '<tr><td>' + esc(s.name) + '</td><td class="td-r">' + price.toFixed(2) + '</td><td class="td-r">' + arrow + ' ' + Math.abs(pct).toFixed(2) + '%</td></tr>';
-      rows++;
+      if (!isFinite(price) || !isFinite(prev) || !prev) { rows.push(null); continue; }
+      rows.push({ price: price, pct: (price - prev) / prev * 100 });
     }
-    html += '</table>';
-    if (!rows) { html += '<div class="tip">（未能解析行情，可检查股票代码）</div>'; }
-    setBody("stock", html);
+    var out = stockTable(list, rows);
+    if (out.count) { setBody("stock", out.html); }
+    else { showStockMock(); }
   });
+}
+
+function renderStock() {
+  var list = CONFIG.stocks;
+  if (!list.length) { setBody("stock", '<div class="err">请在 CONFIG.stocks 添加指数</div>'); return; }
+  var secids = [];
+  for (var i = 0; i < list.length; i++) {
+    var s = emSecid(list[i].code);
+    if (s) { secids.push(s); }
+  }
+  if (secids.length) {
+    var url = "https://push2.eastmoney.com/api/qt/ulist.np/get?secids=" + secids.join(",") +
+              "&fields=f2,f3,f12,f14,f18&fltt=2&invt=2&np=1";
+    jsonGet(url, function (err, d) {
+      if (!err && d && d.data && d.data.diff && d.data.diff.length) {
+        var diff = d.data.diff;
+        var rows = [];
+        for (var j = 0; j < list.length; j++) { rows.push(diff[j] || null); }
+        var out = stockTable(list, rows);
+        if (out.count) { setBody("stock", out.html); return; }
+      }
+      renderStockTencent(list);
+    });
+    return;
+  }
+  renderStockTencent(list);
 }
 
 /* --- DeepSeek API 余额 --- */
@@ -935,7 +1006,7 @@ function renderWallpaper() {
     return;
   }
   var bingApi = "https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1";
-  jsonGet(proxied(bingApi), function (err, d) {
+  jsonViaProxies(bingApi, function (err, d) {
     if (!err && d && d.images && d.images[0]) {
       showImg("https://www.bing.com" + d.images[0].url, d.images[0].copyright || "必应每日壁纸");
     } else {
@@ -1045,20 +1116,9 @@ function resetEdits() {
 }
 
 /* --- 多设备同步（jsonblob，无需注册，国内一般可访问） --- */
-var JB_KEY = "kindle_dash_jsonblob_id";
-
 function jbId() {
   var c = CONFIG.jsonblob;
-  if (c && c.blobId) { return c.blobId; }
-  try {
-    var s = localStorage.getItem(JB_KEY);
-    if (s) { return s; }
-  } catch (e) {}
-  return "";
-}
-
-function jbSaveId(id) {
-  try { localStorage.setItem(JB_KEY, id); } catch (e) {}
+  return (c && c.blobId) ? c.blobId : "";
 }
 
 function jbRequest(method, url, body, done) {
@@ -1077,28 +1137,13 @@ function jbRequest(method, url, body, done) {
   xhr.send(body || null);
 }
 
-function jbExtractId(loc) {
-  if (!loc) { return ""; }
-  var m = loc.match(/([A-Za-z0-9_-]+)\s*$/);
-  return m ? m[1] : "";
-}
-
 function cloudPush(cb) {
-  var body = JSON.stringify({ countdowns: loadCountdowns(), todos: loadTodos() });
   var id = jbId();
-  if (id) {
-    jbRequest("PUT", "https://jsonblob.com/api/jsonBlob/" + id, body, function (err) {
-      if (err) { cb(err); return; }
-      cb(null, "已同步云端");
-    });
-    return;
-  }
-  jbRequest("PUT", "https://jsonblob.com/api/jsonBlob", body, function (err, xhr) {
+  if (!id) { cb(null, ""); return; }
+  var body = JSON.stringify({ countdowns: loadCountdowns(), todos: loadTodos() });
+  jbRequest("PUT", "https://jsonblob.com/api/jsonBlob/" + id, body, function (err) {
     if (err) { cb(err); return; }
-    var newId = jbExtractId(xhr.getResponseHeader("Location"));
-    if (!newId) { cb(new Error("云端未返回ID")); return; }
-    jbSaveId(newId);
-    cb(null, "已同步云端（ID: " + newId + "，请填入 jsonblob.blobId 并重新上传，其他设备才能同步）");
+    cb(null, "已同步云端");
   });
 }
 
