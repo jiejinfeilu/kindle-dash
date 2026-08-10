@@ -522,6 +522,16 @@
   .err {
     font-size: 16px;
   }
+
+  /* ===== v18 自适应宽度：浏览器视口多宽就铺多宽 ===== */
+  html, body {
+    box-sizing: border-box;
+  }
+  body {
+    width: 100%;
+    max-width: 1072px;
+    margin: 0 auto;
+  }
 </style>
 </head>
 <body>
@@ -547,14 +557,14 @@
 </div>
 
 <div class="footer">
-  版本 <span id="appVer">--</span> ｜ 上次更新 <span id="lastUpdate">--</span> ｜ 下次刷新 <span id="countdown">--</span> ｜ <span id="cloudStatus"></span> <button id="editBtn" onclick="toggleEdit()">编辑</button>
+  缩放 <button onclick="zoomPage(-1)">−</button><span id="zoomLv">100%</span><button onclick="zoomPage(1)">+</button><button onclick="zoomReset()">100%</button> ｜ 版本 <span id="appVer">--</span> ｜ 上次更新 <span id="lastUpdate">--</span> ｜ 下次刷新 <span id="countdown">--</span> ｜ <span id="cloudStatus"></span> <button id="editBtn" onclick="toggleEdit()">编辑</button>
 </div>
 
 <script>
 /* ================================================================
    一、配置区（改这里即可，不需要动下面的代码）
    ================================================================ */
-var APP_VERSION = "v17-20260810";  // 页面版本号，上传后用来判断网页是否已更新
+var APP_VERSION = "v19-20260811";  // 页面版本号，上传后用来判断网页是否已更新
 
 var CONFIG = {
   refreshMs: 30 * 60 * 1000,   // 整页刷新间隔
@@ -1769,13 +1779,71 @@ setTimeout(function () {
 }, CONFIG.refreshMs);
 
 /* ================================================================
-   七、初始化
+   七、缩放控制（Kindle 浏览器不能双指缩放时的备用方案）
+   ================================================================ */
+var ZOOM = 100;
+var ZOOM_USE_CSS = null;
+
+function zoomSupported() {
+  try {
+    var el = document.createElement("div");
+    el.style.zoom = "2";
+    document.body.appendChild(el);
+    var v = window.getComputedStyle ? window.getComputedStyle(el).zoom : "";
+    document.body.removeChild(el);
+    return !!v && v !== "" && v !== "normal";
+  } catch (e) {
+    return false;
+  }
+}
+
+function applyZoom(z) {
+  ZOOM = z;
+  if (ZOOM_USE_CSS === null) { ZOOM_USE_CSS = zoomSupported(); }
+  var b = document.body;
+  if (ZOOM_USE_CSS) {
+    /* 老版 WebKit 内核优先用 CSS zoom（会真正重排页面，缩放后不剩空白） */
+    b.style.zoom = z + "%";
+    b.style.webkitTransform = "";
+    b.style.transform = "";
+    b.style.webkitTransformOrigin = "";
+    b.style.transformOrigin = "";
+  } else {
+    /* 不支持 zoom 时退化为 transform 缩放 */
+    b.style.zoom = "";
+    b.style.webkitTransform = "scale(" + (z / 100) + ")";
+    b.style.transform = "scale(" + (z / 100) + ")";
+    b.style.webkitTransformOrigin = "top center";
+    b.style.transformOrigin = "top center";
+  }
+  var lv = $("zoomLv");
+  if (lv) { lv.textContent = z + "%"; }
+  try { localStorage.setItem("kindle_dash_zoom", String(z)); } catch (e) {}
+}
+
+function zoomPage(dir) {
+  var z = (ZOOM || 100) + dir * 10;
+  if (z < 60) { z = 60; }
+  if (z > 200) { z = 200; }
+  applyZoom(z);
+}
+
+function zoomReset() {
+  applyZoom(100);
+}
+
+/* ================================================================
+   八、初始化
    ================================================================ */
 function init() {
   var now = new Date();
   $("lastUpdate").textContent = pad(now.getHours()) + ":" + pad(now.getMinutes());
   var v = $("appVer");
   if (v) { v.textContent = APP_VERSION; }
+  try {
+    var zs = parseInt(localStorage.getItem("kindle_dash_zoom"), 10);
+    if (zs >= 60 && zs <= 200) { applyZoom(zs); }
+  } catch (e) {}
   buildGrid();
   tick();
   if (CONFIG.modules.clock && !CONFIG.modules.clock.on) { $("clockBox").innerHTML = ""; }
