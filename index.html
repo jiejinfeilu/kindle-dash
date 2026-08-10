@@ -547,6 +547,18 @@
     margin: 2px 4px;
     padding: 2px 8px;
   }
+
+  /* ===== v21 小分类收起按钮排版 ===== */
+  .cat {
+    display: block;
+    overflow: hidden;
+  }
+  .cat .fold-btn {
+    float: right;
+    margin: 0 0 0 8px;
+    padding: 1px 10px;
+    font-size: 16px;
+  }
   .edit-row {
     font-size: 19px;
   }
@@ -604,7 +616,7 @@
 /* ================================================================
    一、配置区（改这里即可，不需要动下面的代码）
    ================================================================ */
-var APP_VERSION = "v20-20260811";  // 页面版本号，上传后用来判断网页是否已更新
+var APP_VERSION = "v21-20260811";  // 页面版本号，上传后用来判断网页是否已更新
 
 var CONFIG = {
   refreshMs: 30 * 60 * 1000,   // 整页刷新间隔
@@ -888,11 +900,11 @@ function setBody(id, html) {
   if (el) { el.innerHTML = html; }
 }
 
-function panelHtml(id, title, body) {
+function panelHtml(id, title, body, hasFold) {
+  var foldBtn = hasFold === false ? "" :
+    ' <button class="fold-btn" id="fold-' + id + '" onclick="toggleModule(\'' + id + '\')">收起</button>';
   return '<div class="panel">' +
-         '<h2>' + esc(title) +
-         ' <button class="fold-btn" id="fold-' + id + '" onclick="toggleModule(\'' + id + '\')">收起</button>' +
-         '</h2>' +
+         '<h2>' + esc(title) + foldBtn + '</h2>' +
          '<div class="p-body" id="pw-' + id + '">' + body + '</div>' +
          '</div>';
 }
@@ -926,9 +938,40 @@ function toggleModule(id) {
 function applyModuleState(id) {
   var w = $("pw-" + id);
   var b = $("fold-" + id);
-  if (!w) { return; }
+  /* 没有收起按钮的模块（如“国内内容”）不参与整块收起，避免误隐藏 */
+  if (!w || !b) { return; }
   var folded = isFolded(id);
   w.style.display = folded ? "none" : "";
+  if (b) { b.textContent = folded ? "展开" : "收起"; }
+}
+
+/* --- 国内内容里每个小分类（B站热搜/IT之家/UP主等）单独收起 --- */
+var LS_CAT = "kindle_dash_catfold_v1";
+var CAT_NAMES = [];
+
+function readCatFold() {
+  try { return JSON.parse(localStorage.getItem(LS_CAT) || "{}"); }
+  catch (e) { return {}; }
+}
+
+function writeCatFold(o) {
+  try { localStorage.setItem(LS_CAT, JSON.stringify(o)); } catch (e) {}
+}
+
+function toggleCat(idx) {
+  var name = CAT_NAMES[idx] || ("cat" + idx);
+  var o = readCatFold();
+  o[name] = !o[name];
+  writeCatFold(o);
+  applyCatState(idx, name);
+}
+
+function applyCatState(idx, name) {
+  var o = readCatFold();
+  var folded = !!o[name];
+  var w = $("catb-" + idx);
+  var b = $("foldcat-" + idx);
+  if (w) { w.style.display = folded ? "none" : ""; }
   if (b) { b.textContent = folded ? "展开" : "收起"; }
 }
 
@@ -1240,6 +1283,7 @@ var LOCAL_FEEDS = null;
 
 function renderFeedData(d) {
   LOCAL_FEEDS = d;
+  CAT_NAMES = [];
   var blocks = [
     { name: "B站热搜", titles: d.bili || [] },
     { name: "IT之家", titles: d.ithome || [] },
@@ -1251,7 +1295,10 @@ function renderFeedData(d) {
   }
   var html = "";
   for (var j = 0; j < blocks.length; j++) {
-    html += '<div class="cat">' + esc(blocks[j].name) + '</div>';
+    CAT_NAMES[j] = blocks[j].name;
+    html += '<div class="cat">' + esc(blocks[j].name) +
+            ' <button class="fold-btn cat-fold" id="foldcat-' + j + '" onclick="toggleCat(' + j + ')">收起</button></div>' +
+            '<div class="cat-body" id="catb-' + j + '">';
     var titles = blocks[j].titles || [];
     if (!titles.length) {
       html += '<div class="news-item">（暂无内容）</div>';
@@ -1260,16 +1307,19 @@ function renderFeedData(d) {
         html += '<div class="news-item">' + esc(titles[k]) + '</div>';
       }
     }
+    html += '</div>';
   }
   var gen = d.generated || "";
   if (gen) {
     html += '<div class="tip">数据更新于 ' + esc(String(gen).replace("T", " ").substring(0, 16)) + '（GitHub Actions 定时抓取）</div>';
   }
   setBody("feeds", html);
+  for (var c = 0; c < blocks.length; c++) { applyCatState(c, CAT_NAMES[c]); }
   if (CONFIG.modules.wallpaper && CONFIG.modules.wallpaper.on) { renderWallpaper(); }
 }
 
 function renderFeedsOnline() {
+  CAT_NAMES = [];
   var feeds = [];
   for (var i = 0; i < CONFIG.feeds.length; i++) { feeds.push(CONFIG.feeds[i]); }
   if (CONFIG.bilibiliUids && CONFIG.bilibiliUids.length) {
@@ -1292,7 +1342,10 @@ function renderFeedsOnline() {
     var anyOk = false;
     for (var i = 0; i < feeds.length; i++) {
       var titles = results[i] || [];
-      html += '<div class="cat">' + esc(feeds[i].name) + '</div>';
+      CAT_NAMES[i] = feeds[i].name;
+      html += '<div class="cat">' + esc(feeds[i].name) +
+              ' <button class="fold-btn cat-fold" id="foldcat-' + i + '" onclick="toggleCat(' + i + ')">收起</button></div>' +
+              '<div class="cat-body" id="catb-' + i + '">';
       if (!titles.length) {
         html += '<div class="news-item">（暂无内容或加载失败）</div>';
       } else {
@@ -1302,11 +1355,13 @@ function renderFeedsOnline() {
           html += '<div class="news-item">' + esc(titles[j]) + '</div>';
         }
       }
+      html += '</div>';
     }
     if (!anyOk) {
       html += '<div class="tip">（所有内容源当前均不可达：可在配置 proxies 中添加可用的代理地址）</div>';
     }
     setBody("feeds", html);
+    for (var c = 0; c < feeds.length; c++) { applyCatState(c, CAT_NAMES[c]); }
   }
   for (var k = 0; k < feeds.length; k++) {
     (function (idx) {
@@ -1800,7 +1855,8 @@ function showCloud(msg) {
    ================================================================ */
 function renderModule(id) {
   var title = CONFIG.modules[id].title;
-  return panelHtml(id, title, '<div id="mod-' + id + '">加载中…</div>');
+  /* “国内内容”用每个小分类自己的收起按钮，不再用整块收起 */
+  return panelHtml(id, title, '<div id="mod-' + id + '">加载中…</div>', id !== "feeds");
 }
 
 function dispatch(id) {
