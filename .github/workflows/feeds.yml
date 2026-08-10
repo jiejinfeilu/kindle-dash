@@ -1,0 +1,27 @@
+name: Fetch hotlists
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:作业:
+  fetch: fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4        使用: actions/checkout@v4
+      - name: Setup Node      - 名称: 安装 Node
+        uses: actions/setup-node@v4        使用: actions/setup-node@v4        使用: ctions/setup-node@v4        使用: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Fetch feeds      - 名称: 获取订阅源
+        run: node scripts/fetch-feeds.js        运行: node scripts/fetch-feeds.js
+      - name: Commit changes      - 名称: 提交更改      - name: o交更改      - 名称: ommit changes      - 名称: 提交更改
+        uses: s        使用: tefanzweifel/git-auto-commit-action@v5        使用: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update hotlists"          commit_message提交消息: "chore: 更新热门列表"
+          file_pattern: data/feeds.json data/wallpaper.jpg
