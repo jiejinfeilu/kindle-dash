@@ -1,5 +1,5 @@
 // 在 GitHub Actions 上运行：定时抓取热榜并写入 data/feeds.json
-// 页面只需要读取同源 JSON，彻底绕开浏览器跨域和代理问题。
+// 每个栏目配了多个数据源，按顺序自动切换，日志会打印每个源的成败。
 const fs = require("fs");
 const path = require("path");
 
@@ -8,6 +8,12 @@ const UP_UIDS = [
   { name: "谈三圈", uid: "520814591" },
   { name: "一网一匠", uid: "383814461" },
   { name: "FUN科技", uid: "9321359" }
+];
+
+const RSSHUBS = [
+  "https://rsshub.app",
+  "https://rsshub.rssforever.com",
+  "https://rsshub.pseudoyu.com"
 ];
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36";
@@ -22,31 +28,102 @@ async function getJson(url) {
   return JSON.parse(await get(url));
 }
 
-async function biliHot() {
-  try {
-    const d = await getJson("https://api.bilibili.com/x/web-interface/search/square?limit=10");
-    const list = d.data && d.data.trending ? d.data.trending.list : [];
-    return list.slice(0, 6).map(function (x) { return x.keyword; }).filter(Boolean);
-  } catch (e) { return []; }
+function pick(arr, n) {
+  const out = [];
+  for (let i = 0; i < arr.length && out.length < n; i++) {
+    const t = arr[i];
+    if (t) { out.push(t); }
+  }
+  return out;
 }
 
-async function vvhanHot(endpoint) {
-  try {
-    const d = await getJson("https://api.vvhan.com/api/hotlist/" + endpoint);
-    const list = d.data || [];
-    return list.slice(0, 6).map(function (x) { return x.title; }).filter(Boolean);
-  } catch (e) { return []; }
+async function trySources(sources, n) {
+  for (const s of sources) {
+    try {
+      const d = await getJson(s.url);
+      const titles = pick(s.pick(d), n).map(function (x) { return s.title(x); }).filter(Boolean);
+      if (titles.length) { console.log("  ok:", s.url); return titles; }
+      console.log("  empty:", s.url);
+    } catch (e) { console.log("  fail:", s.url, e.message); }
+  }
+  return [];
+}
+
+async function biliHot() {
+  return trySources([
+    {
+      url: "https://api.bilibili.com/x/web-interface/search/square?limit=10",
+      pick: function (d) { return (d.data && d.data.trending) ? d.data.trending.list : []; },
+      title: function (x) { return x.keyword; }
+    }
+  ], 6);
+}
+
+async function zhihuHot() {
+  return trySources([
+    {
+      url: "https://api.vvhan.com/api/hotlist/zhihuHot",
+      pick: function (d) { return d.data || []; },
+      title: function (x) { return x.title; }
+    },
+    {
+      url: "https://api-hot.imsyy.top/zhihu",
+      pick: function (d) { return d.data || []; },
+      title: function (x) { return x.title; }
+    },
+    {
+      url: "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=10",
+      pick: function (d) { return d.data || []; },
+      title: function (x) { return x.target ? x.target.title : ""; }
+    }
+  ], 6);
+}
+
+async function weiboHot() {
+  return trySources([
+    {
+      url: "https://api.vvhan.com/api/hotlist/wbHot",
+      pick: function (d) { return d.data || []; },
+      title: function (x) { return x.title; }
+    },
+    {
+      url: "https://api-hot.imsyy.top/weibo",
+      pick: function (d) { return d.data || []; },
+      title: function (x) { return x.title; }
+    },
+    {
+      url: "https://tenapi.cn/v2/weibohot",
+      pick: function (d) { return d.data || []; },
+      title: function (x) { return x.title; }
+    }
+  ], 6);
+}
+
+function parseRssTitles(txt, n) {
+  const items = txt.split("<item>").slice(1);
+  const out = [];
+  for (const s of items) {
+    if (out.length >= n) { break; }
+    const m = s.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/);
+    if (m && m[1]) {
+      const t = m[1].replace(/&amp;/g, "&").replace(/<!\[CDATA\[|\]\]>/g, "").trim();
+      if (t) { out.push(t); }
+    }
+  }
+  return out;
 }
 
 async function upDynamic(uid) {
-  try {
-    const txt = await get("https://rsshub.app/bilibili/user/dynamic/" + uid);
-    const items = txt.split("<item>").slice(1).map(function (s) {
-      const m = s.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/);
-      return m ? m[1].replace(/&amp;/g, "&").replace(/<!\[CDATA\[|\]\]>/g, "").trim() : "";
-    }).filter(Boolean);
-    return items.slice(0, 4);
-  } catch (e) { return []; }
+  for (const hub of RSSHUBS) {
+    for (const route of ["dynamic", "video"]) {
+      try {
+        const txt = await get(hub + "/bilibili/user/" + route + "/" + uid);
+        const titles = parseRssTitles(txt, 4);
+        if (titles.length) { console.log("  ok up:", uid, hub, route); return titles; }
+      } catch (e) { console.log("  fail up:", uid, hub, route, e.message); }
+    }
+  }
+  return [];
 }
 
 async function bingWallpaper() {
@@ -62,36 +139,39 @@ async function bingWallpaper() {
     fs.mkdirSync(wallDir, { recursive: true });
     fs.writeFileSync(path.join(wallDir, "wallpaper.jpg"), buf);
     return img.copyright || "";
-  } catch (e) { return ""; }
+  } catch (e) { console.log("  fail wallpaper:", e.message); return ""; }
 }
 
 async function main() {
-  console.log("stage 1/3: fetching hotlists ...");
-  const results = await Promise.all([
-    biliHot(),
-    vvhanHot("zhihuHot"),
-    vvhanHot("wbHot")
-  ]);
-  console.log("stage 2/3: fetching wallpaper ...");
-  const wallpaperCaption = await bingWallpaper();
+  const dir = path.join(__dirname, "..", "data");
+  fs.mkdirSync(dir, { recursive: true });
+
+  console.log("stage 1/3: hotlists");
+  const bili = await biliHot();
+  const zhihu = await zhihuHot();
+  const weibo = await weiboHot();
+
+  console.log("stage 2/3: up dynamics");
   const ups = [];
   for (const u of UP_UIDS) {
     console.log("  up:", u.name);
     const titles = await upDynamic(u.uid);
     if (titles.length) { ups.push({ name: u.name, titles: titles }); }
   }
+
+  console.log("stage 2.5/3: wallpaper");
+  const wallpaperCaption = await bingWallpaper();
+
   const out = {
     generated: new Date().toISOString(),
-    bili: results[0],
-    zhihu: results[1],
-    weibo: results[2],
+    bili: bili,
+    zhihu: zhihu,
+    weibo: weibo,
     ups: ups,
     wallpaperCaption: wallpaperCaption
   };
-  const dir = path.join(__dirname, "..", "data");
-  fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, "feeds.json"), JSON.stringify(out, null, 2));
-  console.log("stage 3/3: feeds.json + wallpaper.jpg written to", dir);
+  console.log("stage 3/3: done, bili=" + bili.length + " zhihu=" + zhihu.length + " weibo=" + weibo.length + " ups=" + ups.length);
 }
 
 main().catch(function (e) { console.error(e); process.exit(1); });
