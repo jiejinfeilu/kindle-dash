@@ -232,7 +232,7 @@
 /* ================================================================
    一、配置区（改这里即可，不需要动下面的代码）
    ================================================================ */
-var APP_VERSION = "v6-20260810";   // 页面版本号，上传后用来判断网页是否已更新
+var APP_VERSION = "v7-20260810";   // 页面版本号，上传后用来判断网页是否已更新
 
 var CONFIG = {
   refreshMs: 30 * 60 * 1000,   // 整页刷新间隔
@@ -285,11 +285,11 @@ var CONFIG = {
       url: "https://api.bilibili.com/x/web-interface/search/square?limit=10",
       listPath: "data.trending.list", titleKey: "keyword", count: 4 },
     { name: "知乎热榜", type: "json",
-      url: "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=10",
-      listPath: "data", titleKey: "target.title", count: 3 },
+      url: "https://api.vvhan.com/api/hotlist/zhihuHot",
+      listPath: "data", titleKey: "title", count: 4 },
     { name: "微博热搜", type: "json",
-      url: "https://weibo.com/ajax/side/hotSearch",
-      listPath: "data.realtime", titleKey: "word", count: 3 }
+      url: "https://api.vvhan.com/api/hotlist/wbHot",
+      listPath: "data", titleKey: "title", count: 4 }
   ],
   /* --- B站UP主动态：可填多个 ---
      每项一行：{ name: "显示名字", uid: "UP主UID" }
@@ -303,7 +303,11 @@ var CONFIG = {
     // { name: "大小马聊科技", uid: "把UID数字填这里" }
   ],
   xiaohongshuRssUrl: "",        // 留空即可；自建 RSSHub 后再填
-  rsshub: "https://rsshub.app", // B站UP主 RSS 服务，被限流可换 https://rsshub.rssforever.com
+  rsshubs: [                    // B站UP主动态 RSS 服务列表，按顺序自动切换
+    "https://rsshub.app",
+    "https://rsshub.rssforever.com",
+    "https://rsshub.pseudoyu.com"
+  ],
 
   /* --- DeepSeek API 余额 ---
      apiKey：你的 DeepSeek API Key（注意：公开网页里填 Key 有泄露风险，见 README）
@@ -339,6 +343,18 @@ var CONFIG = {
      访问不了 jsonblob，跳过即可（编辑仍保存在本机浏览器）。 */
   jsonblob: {
     blobId: "kddash-8f3a2c1e9b47d605"
+  },
+
+  /* --- GitHub Gist 同步（推荐，国内可访问，用你已有的 GitHub 账号）---
+     1) 打开 https://gist.github.com 新建 Gist，文件名填 kindle-dash.json，
+        内容随便填 {"countdowns":[],"todos":[]}，点创建
+     2) 复制网址里的 Gist ID（gist.github.com/你的用户名/后面那串）
+     3) GitHub → Settings → Developer settings → Personal access tokens →
+        Tokens (classic) → Generate new token → 只勾选 gist 权限 → 复制 token
+     4) 填到下面。填了 github 就优先用它同步，jsonblob 作备选。 */
+  github: {
+    gistId: "4796e49a0e69fb88c88f2b12eb01e140",
+    token: "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"
   },
 
   /* --- 每日一图：留空用必应每日壁纸，或填任意图片直链 --- */
@@ -598,7 +614,9 @@ function wmoText(code) {
 function renderOpenMeteo() {
   var url = "https://api.open-meteo.com/v1/forecast?latitude=" + encodeURIComponent(CONFIG.weatherLat) +
             "&longitude=" + encodeURIComponent(CONFIG.weatherLon) +
-            "&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=3";
+            "&current_weather=true&hourly=relative_humidity_2m" +
+            "&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset" +
+            "&timezone=auto&forecast_days=5";
   setBody("weather", '<div class="w-main">加载中…</div><div class="w-fc"></div>');
   jsonGet(url, function (err, d) {
     if (err || !d || !d.current_weather) {
@@ -607,11 +625,25 @@ function renderOpenMeteo() {
     }
     var cw = d.current_weather;
     var main = CONFIG.city + "  " + wmoText(cw.weathercode) + "  " + Math.round(cw.temperature) + "°C";
-    var sub = "风速 " + Math.round(cw.windspeed) + " km/h ｜ 风向 " + Math.round(cw.winddirection) + "°";
+    var hum = "--";
+    try {
+      var now = new Date();
+      var key = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate()) + "T" + pad(now.getHours()) + ":00";
+      var harr = d.hourly ? d.hourly.relative_humidity_2m : null;
+      var htimes = d.hourly ? d.hourly.time : null;
+      if (harr && htimes) {
+        var hidx = -1;
+        for (var h = 0; h < htimes.length; h++) {
+          if (String(htimes[h]).indexOf(key) === 0) { hidx = h; break; }
+        }
+        if (hidx >= 0 && harr[hidx] !== undefined) { hum = harr[hidx] + "%"; }
+      }
+    } catch (e) {}
+    var sub = "湿度 " + hum + " ｜ 风速 " + Math.round(cw.windspeed) + " km/h ｜ 风向 " + Math.round(cw.winddirection) + "°";
     setBody("weather",
       '<div class="w-main">' + esc(main) + '</div>' +
       '<div class="w-sub">' + esc(sub) + '</div>' +
-      '<div class="w-fc" id="fcBody">三天预报加载中…</div>');
+      '<div class="w-fc" id="fcBody">五天预报加载中…</div>');
     var dl = d.daily;
     var fcEl = $("fcBody");
     if (!dl || !dl.time || !dl.time.length) {
@@ -619,12 +651,23 @@ function renderOpenMeteo() {
       return;
     }
     var names = ["今天", "明天", "后天"];
+    var wk = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
     var lines = [];
-    for (var i = 0; i < Math.min(3, dl.time.length); i++) {
-      lines.push(names[i] + "：" + wmoText(dl.weathercode[i]) + " " +
-        Math.round(dl.temperature_2m_min[i]) + "~" + Math.round(dl.temperature_2m_max[i]) + "°C");
+    var n = Math.min(5, dl.time.length);
+    for (var i = 0; i < n; i++) {
+      var label = i < 3 ? names[i] : wk[new Date(dl.time[i] + "T00:00:00").getDay()];
+      var rain = dl.precipitation_probability_max ? Math.round(dl.precipitation_probability_max[i]) : null;
+      var rainTxt = (rain !== null && rain !== undefined) ? " 降水" + rain + "%" : "";
+      lines.push(label + "：" + wmoText(dl.weathercode[i]) + " " +
+        Math.round(dl.temperature_2m_min[i]) + "~" + Math.round(dl.temperature_2m_max[i]) + "°C" + rainTxt);
     }
-    if (fcEl) { fcEl.textContent = lines.join("\n"); }
+    var sunHtml = "";
+    var sr = dl.sunrise ? String(dl.sunrise[0]) : "";
+    var ss = dl.sunset ? String(dl.sunset[0]) : "";
+    if (sr && ss) {
+      sunHtml = "<br>日出 " + esc(sr.substring(11, 16)) + " ｜ 日落 " + esc(ss.substring(11, 16));
+    }
+    if (fcEl) { fcEl.innerHTML = esc(lines.join("\n")).replace(/\n/g, "<br>") + sunHtml; }
   });
 }
 
@@ -689,7 +732,24 @@ function parseRss(xmlText) {
   return out;
 }
 
+function fetchBiliTitles(feed, cb) {
+  var hubs = CONFIG.rsshubs || [];
+  var hi = 0;
+  function next() {
+    if (hi >= hubs.length) { cb(null, []); return; }
+    var u = hubs[hi++] + "/bilibili/user/dynamic/" + feed.uid;
+    fetchViaProxies(u, function (err, txt) {
+      if (err || !txt) { next(); return; }
+      var titles = parseRss(txt);
+      if (titles.length) { cb(null, titles); }
+      else { next(); }
+    });
+  }
+  next();
+}
+
 function feedTitles(feed, cb) {
+  if (feed.type === "bili") { fetchBiliTitles(feed, cb); return; }
   if (feed.type === "rss") {
     fetchViaProxies(feed.url, function (err, txt) {
       if (err || !txt) { cb(null, []); return; }
@@ -719,8 +779,7 @@ function renderFeeds() {
   if (CONFIG.bilibiliUids && CONFIG.bilibiliUids.length) {
     for (var bi = 0; bi < CONFIG.bilibiliUids.length; bi++) {
       var bu = CONFIG.bilibiliUids[bi];
-      feeds.push({ name: bu.name || ("B站UP主 " + bu.uid), type: "rss",
-        url: CONFIG.rsshub + "/bilibili/user/dynamic/" + bu.uid, count: 3 });
+      feeds.push({ name: bu.name || ("B站UP主 " + bu.uid), type: "bili", uid: bu.uid, count: 3 });
     }
   }
   if (CONFIG.xiaohongshuRssUrl) {
@@ -1010,7 +1069,7 @@ function renderWallpaper() {
     if (!err && d && d.images && d.images[0]) {
       showImg("https://www.bing.com" + d.images[0].url, d.images[0].copyright || "必应每日壁纸");
     } else {
-      setBody("wallpaper", '<div class="err">壁纸加载失败（可填 wallpaperUrl 图片直链）</div>');
+      showImg("https://bing.img.run/1920x1080.php", "Bing 壁纸直链（备选，加载慢请耐心等待）");
     }
   });
 }
@@ -1137,7 +1196,57 @@ function jbRequest(method, url, body, done) {
   xhr.send(body || null);
 }
 
+function ghPush(cb) {
+  var g = CONFIG.github;
+  var content = JSON.stringify({ countdowns: loadCountdowns(), todos: loadTodos() });
+  var body = JSON.stringify({ files: { "kindle-dash.json": { content: content } } });
+  var xhr = new XMLHttpRequest();
+  xhr.open("PATCH", "https://api.github.com/gists/" + g.gistId, true);
+  xhr.setRequestHeader("Authorization", "token " + g.token);
+  xhr.setRequestHeader("Accept", "application/vnd.github+json");
+  xhr.setRequestHeader("Content-Type", "application/json");
+  xhr.timeout = 15000;
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4) {
+      if (xhr.status >= 200 && xhr.status < 300) { cb(null, "已同步云端(GitHub)"); }
+      else { cb(new Error("HTTP " + xhr.status)); }
+    }
+  };
+  xhr.ontimeout = function () { cb(new Error("timeout")); };
+  xhr.onerror = function () { cb(new Error("network")); };
+  xhr.send(body);
+}
+
+function ghPull(cb) {
+  var g = CONFIG.github;
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "https://api.github.com/gists/" + g.gistId, true);
+  if (g.token) { xhr.setRequestHeader("Authorization", "token " + g.token); }
+  xhr.setRequestHeader("Accept", "application/vnd.github+json");
+  xhr.timeout = 15000;
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState !== 4) { return; }
+    if (xhr.status >= 200 && xhr.status < 300) {
+      try {
+        var d = JSON.parse(xhr.responseText);
+        var f = d.files && d.files["kindle-dash.json"];
+        if (f && f.content) {
+          var rec = JSON.parse(f.content);
+          if (rec.countdowns && rec.countdowns.length) { saveCountdowns(rec.countdowns); }
+          if (rec.todos && rec.todos.length) { saveTodos(rec.todos); }
+          cb(null, "已从云端同步(GitHub)");
+        } else { cb(null, ""); }
+      } catch (e) { cb(e); }
+    } else { cb(new Error("HTTP " + xhr.status)); }
+  };
+  xhr.ontimeout = function () { cb(new Error("timeout")); };
+  xhr.onerror = function () { cb(new Error("network")); };
+  xhr.send();
+}
+
 function cloudPush(cb) {
+  var g = CONFIG.github;
+  if (g && g.gistId && g.token) { ghPush(cb); return; }
   var id = jbId();
   if (!id) { cb(null, ""); return; }
   var body = JSON.stringify({ countdowns: loadCountdowns(), todos: loadTodos() });
@@ -1148,6 +1257,8 @@ function cloudPush(cb) {
 }
 
 function cloudPull(cb) {
+  var g = CONFIG.github;
+  if (g && g.gistId) { ghPull(cb); return; }
   var id = jbId();
   if (!id) { cb(null, ""); return; }
   jbRequest("GET", "https://jsonblob.com/api/jsonBlob/" + id, null, function (err, xhr) {

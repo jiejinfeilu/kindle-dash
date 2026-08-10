@@ -101,26 +101,28 @@
 
 GitHub Pages 是静态托管，网页里的 JavaScript 没有权限写你的仓库。想让网页自动改仓库文件，只能把 GitHub 的写权限令牌放进公开页面——那样任何人都能改你的仓库，风险极大，不建议。所以网页编辑结果默认保存在本机浏览器里。
 
-### 可选：jsonblob 多设备同步（无需注册）
+### 可选：多设备同步（推荐 GitHub Gist，国内可访问）
 
-已内置固定 ID，无需注册和配置：
+用你已有的 GitHub 账号，一次配置永久同步：
 
-1. 在任意设备打开页面 → 点“编辑” → 改好内容 → 点“保存”，底部显示“已同步云端”即写入云端。
-2. 其他设备打开页面时自动读取云端同一份数据。
-3. 如果保存时显示“云端同步失败”，说明当前网络访问不了 jsonblob，编辑仍会保存在本机，功能不受影响。
+1. 打开 https://gist.github.com 新建 Gist，**文件名填 `kindle-dash.json`**，内容随便填 `{"countdowns":[],"todos":[]}`，点创建。
+2. 复制网址里的 Gist ID（`gist.github.com/你的用户名/` 后面那串字母数字）。
+3. 打开 GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token → **只勾选 `gist` 权限** → Generate → 复制 token（以 `ghp_` 开头）。
+4. 把 Gist ID 和 token 填进 `index.html` 的 `github.gistId` 和 `github.token`，重新上传。
+5. 之后在任意设备点“编辑”→“保存”，底部显示“已同步云端(GitHub)”；其他设备打开自动读取。
 
-说明：jsonblob 免费、无需注册。内置 ID 相当于这把数据的钥匙，知道 ID 的人能读写这份数据——里面只有倒计时和待办，没有敏感信息。想换 ID 可改 `jsonblob.blobId`。
+说明：这个 token 只有 gist 权限，只能读写你的 Gist（就是这份倒计时/待办数据），动不了账号，风险可控。jsonblob 保留为备选（国内可能连不上）；两者都不配置则编辑只存在本机浏览器。
 
 ## 五、常见问题
 
-- **新闻/内容源加载失败**：页面会按顺序尝试多个 CORS 代理；若全部失败，把当前网络能用的代理地址加进 `proxies` 列表（格式如 `"https://corsproxy.io/?url="`），或把 `feeds` 换成其它 RSS 源。
+- **新闻/内容源加载失败**：页面会按顺序尝试多个 CORS 代理；若全部失败，把当前网络能用的代理地址加进 `proxies` 列表（格式如 `"https://corsproxy.io/?url="`）。知乎/微博走热榜聚合接口，B站UP主动态走多个 RSSHub 实例自动切换。
 - **行情显示模拟数据**：东方财富直连失败时会自动切腾讯接口（走代理），两者都不通才显示模拟数据。
 - **DeepSeek 显示“CORS 拦截”**：正常现象，把余额手动填进 `manualBalance`。
 - **壁纸不显示**：必应被墙时把 `wallpaperUrl` 填成任意图片直链。
 - **页面超出一屏**：把某个模块的 `on` 改成 `false`。
 - **天气报错**：国内优先用和风天气（填 `qweatherKey` + 城市 ID）；新 Key 需要等待激活；若坚持 OpenWeather，确认 Key 完整、`city` 用英文拼音、网络能访问 openweathermap.org。
 - **本地直接双击 index.html 打开时接口全部失败**：浏览器安全策略会拦截跨域请求，属正常。本地测试请在文件所在文件夹的终端运行 `python -m http.server 8000`（启动一个本地测试服务器），然后访问 `http://localhost:8000`；正式使用以 GitHub Pages 的 https 网址为准。
-- **上传后打开还是旧版本**：先看页面底部“版本”是否显示 `v6-20260810`。若不是：① 电脑上按 Ctrl+F5 强制刷新，或网址后面加 `?v=1` 打开；② 等 2~3 分钟让 Pages 更新；③ 确认仓库里 index.html 在根目录、提交时间是刚刚；④ Kindle 上清浏览器缓存后再开。新版每 30 分钟自动刷新时会自动带新参数绕过缓存。
+- **上传后打开还是旧版本**：先看页面底部“版本”是否显示 `v7-20260810`。若不是：① 电脑上按 Ctrl+F5 强制刷新，或网址后面加 `?v=1` 打开；② 等 2~3 分钟让 Pages 更新；③ 确认仓库里 index.html 在根目录、提交时间是刚刚；④ Kindle 上清浏览器缓存后再开。新版每 30 分钟自动刷新时会自动带新参数绕过缓存。
 
 ## 六、验证清单
 
