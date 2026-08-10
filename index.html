@@ -445,7 +445,7 @@
 /* ================================================================
    一、配置区（改这里即可，不需要动下面的代码）
    ================================================================ */
-var APP_VERSION = "v13-20260810";  // 页面版本号，上传后用来判断网页是否已更新
+var APP_VERSION = "v14-20260810";  // 页面版本号，上传后用来判断网页是否已更新
 
 var CONFIG = {
   refreshMs: 30 * 60 * 1000,   // 整页刷新间隔
@@ -1043,8 +1043,8 @@ function renderFeedData(d) {
   LOCAL_FEEDS = d;
   var blocks = [
     { name: "B站热搜", titles: d.bili || [] },
-    { name: "知乎热榜", titles: d.zhihu || [] },
-    { name: "微博热搜", titles: d.weibo || [] }
+    { name: "百度热搜", titles: d.baidu || [] },
+    { name: "今日头条", titles: d.toutiao || [] }
   ];
   var ups = d.ups || [];
   for (var i = 0; i < ups.length; i++) {

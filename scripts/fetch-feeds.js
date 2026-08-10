@@ -1,7 +1,7 @@
-// 在 GitHub Actions 上运行：定时抓取热榜并写入 data/feeds.json
-// 每个栏目配了多个数据源，按顺序自动切换，日志会打印每个源的成败。
+// 在 GitHub Actions 上运行：定时抓取热榜与 UP主动态，写入 data/feeds.json
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const UP_UIDS = [
   { name: "极客湾Geekerwan", uid: "25876945" },
@@ -17,6 +17,7 @@ const RSSHUBS = [
 ];
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36";
+const MIXIN_KEY_ENC_TAB = [46,47,18,2,53,8,23,32,15,50,10,31,58,3,45,35,27,43,5,49,33,9,42,19,29,28,14,39,12,38,41,13,37,48,7,16,24,55,40,61,26,17,0,1,60,51,30,4,22,25,54,21,56,59,6,63,57,62,11,36,20,34,44,52];
 
 async function get(url, extraHeaders) {
   const headers = { "User-Agent": UA };
@@ -63,53 +64,32 @@ async function biliHot() {
   ], 6);
 }
 
-async function zhihuHot() {
+async function baiduHot() {
   return trySources([
     {
-      url: "https://tenapi.cn/v2/zhihuhot",
-      pick: function (d) { return d.data || []; },
-      title: function (x) { return x.title; }
-    },
-    {
-      url: "https://api.vvhan.com/api/hotlist/zhihuHot",
-      pick: function (d) { return d.data || []; },
-      title: function (x) { return x.title; }
-    },
-    {
-      url: "https://api-hot.imsyy.top/zhihu",
-      pick: function (d) { return d.data || []; },
-      title: function (x) { return x.title; }
-    },
-    {
-      url: "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=10",
-      pick: function (d) { return d.data || []; },
-      title: function (x) { return x.target ? x.target.title : ""; }
+      url: "https://top.baidu.com/api/board?platform=wise&tab=realtime",
+      pick: function (d) {
+        const cards = (d.data && d.data.cards) ? d.data.cards : [];
+        const arr = [];
+        for (const c of cards) {
+          if (c.content && c.content.length) {
+            for (const item of c.content) { arr.push(item); }
+          }
+        }
+        return arr;
+      },
+      title: function (x) { return x.word || x.query || ""; }
     }
   ], 6);
 }
 
-async function weiboHot() {
+async function toutiaoHot() {
   return trySources([
     {
-      url: "https://tenapi.cn/v2/weibohot",
-      pick: function (d) { return d.data || []; },
-      title: function (x) { return x.title; }
-    },
-    {
-      url: "https://weibo.com/ajax/side/hotSearch",
-      pick: function (d) { return (d.data && d.data.realtime) ? d.data.realtime : []; },
-      title: function (x) { return x.word; }
-    },
-    {
-      url: "https://api.vvhan.com/api/hotlist/wbHot",
-      pick: function (d) { return d.data || []; },
-      title: function (x) { return x.title; }
-    },
-    {
-      url: "https://api-hot.imsyy.top/weibo",
-      pick: function (d) { return d.data || []; },
-      title: function (x) { return x.title; }
-    },
+      url: "https://www.toutiao.com/hot-event/hot-board/?origin=toutiao_pc",
+      pick: function (d) { return (d.data && d.data.data) ? d.data.data : []; },
+      title: function (x) { return x.Title || ""; }
+    }
   ], 6);
 }
 
@@ -127,22 +107,48 @@ function parseRssTitles(txt, n) {
   return out;
 }
 
-async function upVideos(uid) {
-  // 优先用 B站官方接口直接抓UP主最新投稿
-  const apiUrls = [
-    "https://api.bilibili.com/x/space/arc/search?mid=" + uid + "&ps=6&pn=1&order=pubdate",
-    "https://api.bilibili.com/x/space/arc/search?mid=" + uid + "&ps=6&pn=1&order=click"
-  ];
-  const ref = { Referer: "https://space.bilibili.com/" + uid };
-  for (const u of apiUrls) {
-    try {
-      const d = await getJson(u, ref);
-      const vlist = (d.data && d.data.vlist) ? d.data.vlist : [];
-      const titles = pick(vlist, 4).map(function (x) { return x.title; }).filter(Boolean);
-      if (titles.length) { console.log("  ok up:", uid, "bilibili api"); return titles; }
-    } catch (e) { console.log("  fail up:", uid, "bilibili api", e.message); }
+function getMixinKey(orig) {
+  return MIXIN_KEY_ENC_TAB.map(function (i) { return orig[i]; }).join("");
+}
+
+async function getWbiKeys() {
+  const d = await getJson("https://api.bilibili.com/x/web-interface/nav");
+  const wbi = d.data && d.data.wbi_img;
+  if (!wbi || !wbi.img_url || !wbi.sub_url) { throw new Error("no wbi keys"); }
+  const ik = wbi.img_url.slice(wbi.img_url.lastIndexOf("/") + 1, wbi.img_url.lastIndexOf("."));
+  const sk = wbi.sub_url.slice(wbi.sub_url.lastIndexOf("/") + 1, wbi.sub_url.lastIndexOf("."));
+  return getMixinKey(ik + sk);
+}
+
+function signParams(params, mixinKey) {
+  const wts = Math.floor(Date.now() / 1000);
+  params.wts = wts;
+  const keys = Object.keys(params).sort();
+  let q = "";
+  for (const k of keys) {
+    if (params[k] === undefined || params[k] === null) { continue; }
+    if (q) { q += "&"; }
+    q += encodeURIComponent(k) + "=" + encodeURIComponent(params[k]);
   }
-  // 兜底：RSSHub 多实例
+  params.w_rid = crypto.createHash("md5").update(q + mixinKey).digest("hex");
+  return params;
+}
+
+async function upVideos(uid) {
+  try {
+    const mixinKey = await getWbiKeys();
+    const params = signParams({ mid: uid, ps: 6, pn: 1, order: "pubdate" }, mixinKey);
+    const keys = Object.keys(params);
+    const qs = [];
+    for (const k of keys) { qs.push(encodeURIComponent(k) + "=" + encodeURIComponent(params[k])); }
+    const url = "https://api.bilibili.com/x/space/wbi/arc/search?" + qs.join("&");
+    const d = await getJson(url, { Referer: "https://space.bilibili.com/" + uid });
+    const vlist = (d.data && d.data.list && d.data.list.vlist) ? d.data.list.vlist : [];
+    const titles = pick(vlist, 4).map(function (x) { return x.title; }).filter(Boolean);
+    if (titles.length) { console.log("  ok up:", uid, "wbi api"); return titles; }
+    console.log("  empty up:", uid, "wbi api");
+  } catch (e) { console.log("  fail up:", uid, "wbi api", e.message); }
+
   for (const hub of RSSHUBS) {
     try {
       const txt = await get(hub + "/bilibili/user/video/" + uid);
@@ -175,8 +181,8 @@ async function main() {
 
   console.log("stage 1/3: hotlists");
   const bili = await biliHot();
-  const zhihu = await zhihuHot();
-  const weibo = await weiboHot();
+  const baidu = await baiduHot();
+  const toutiao = await toutiaoHot();
 
   console.log("stage 2/3: up dynamics");
   const ups = [];
@@ -192,13 +198,13 @@ async function main() {
   const out = {
     generated: new Date().toISOString(),
     bili: bili,
-    zhihu: zhihu,
-    weibo: weibo,
+    baidu: baidu,
+    toutiao: toutiao,
     ups: ups,
     wallpaperCaption: wallpaperCaption
   };
   fs.writeFileSync(path.join(dir, "feeds.json"), JSON.stringify(out, null, 2));
-  console.log("stage 3/3: done, bili=" + bili.length + " zhihu=" + zhihu.length + " weibo=" + weibo.length + " ups=" + ups.length);
+  console.log("stage 3/3: done, bili=" + bili.length + " baidu=" + baidu.length + " toutiao=" + toutiao.length + " ups=" + ups.length);
 }
 
 main().catch(function (e) { console.error(e); process.exit(1); });
