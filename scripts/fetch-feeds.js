@@ -64,33 +64,14 @@ async function biliHot() {
   ], 6);
 }
 
-async function baiduHot() {
-  return trySources([
-    {
-      url: "https://top.baidu.com/api/board?platform=wise&tab=realtime",
-      pick: function (d) {
-        const cards = (d.data && d.data.cards) ? d.data.cards : [];
-        const arr = [];
-        for (const c of cards) {
-          if (c.content && c.content.length) {
-            for (const item of c.content) { arr.push(item); }
-          }
-        }
-        return arr;
-      },
-      title: function (x) { return x.word || x.query || ""; }
-    }
-  ], 6);
-}
-
-async function toutiaoHot() {
-  return trySources([
-    {
-      url: "https://www.toutiao.com/hot-event/hot-board/?origin=toutiao_pc",
-      pick: function (d) { return (d.data && d.data.data) ? d.data.data : []; },
-      title: function (x) { return x.Title || ""; }
-    }
-  ], 6);
+async function rssHot(url) {
+  try {
+    const txt = await get(url);
+    const titles = parseRssTitles(txt, 6);
+    if (titles.length) { console.log("  ok rss:", url); return titles; }
+    console.log("  empty rss:", url);
+  } catch (e) { console.log("  fail rss:", url, e.message); }
+  return [];
 }
 
 function parseRssTitles(txt, n) {
@@ -134,15 +115,28 @@ function signParams(params, mixinKey) {
   return params;
 }
 
+let BUV = "";
+
+async function getBuvid() {
+  try {
+    const d = await getJson("https://api.bilibili.com/x/frontend/finger/spi");
+    const b3 = d.data && d.data.b_3;
+    if (b3) { BUV = "buvid3=" + b3; }
+  } catch (e) { console.log("  fail buvid:", e.message); }
+}
+
 async function upVideos(uid) {
   try {
+    if (!BUV) { await getBuvid(); }
     const mixinKey = await getWbiKeys();
     const params = signParams({ mid: uid, ps: 6, pn: 1, order: "pubdate" }, mixinKey);
     const keys = Object.keys(params);
     const qs = [];
     for (const k of keys) { qs.push(encodeURIComponent(k) + "=" + encodeURIComponent(params[k])); }
     const url = "https://api.bilibili.com/x/space/wbi/arc/search?" + qs.join("&");
-    const d = await getJson(url, { Referer: "https://space.bilibili.com/" + uid });
+    const headers = { Referer: "https://space.bilibili.com/" + uid };
+    if (BUV) { headers.Cookie = BUV; }
+    const d = await getJson(url, headers);
     const vlist = (d.data && d.data.list && d.data.list.vlist) ? d.data.list.vlist : [];
     const titles = pick(vlist, 4).map(function (x) { return x.title; }).filter(Boolean);
     if (titles.length) { console.log("  ok up:", uid, "wbi api"); return titles; }
@@ -181,8 +175,8 @@ async function main() {
 
   console.log("stage 1/3: hotlists");
   const bili = await biliHot();
-  const baidu = await baiduHot();
-  const toutiao = await toutiaoHot();
+  const ithome = await rssHot("https://www.ithome.com/rss/");
+  const sspai = await rssHot("https://sspai.com/feed");
 
   console.log("stage 2/3: up dynamics");
   const ups = [];
@@ -198,13 +192,13 @@ async function main() {
   const out = {
     generated: new Date().toISOString(),
     bili: bili,
-    baidu: baidu,
-    toutiao: toutiao,
+    ithome: ithome,
+    sspai: sspai,
     ups: ups,
     wallpaperCaption: wallpaperCaption
   };
   fs.writeFileSync(path.join(dir, "feeds.json"), JSON.stringify(out, null, 2));
-  console.log("stage 3/3: done, bili=" + bili.length + " baidu=" + baidu.length + " toutiao=" + toutiao.length + " ups=" + ups.length);
+  console.log("stage 3/3: done, bili=" + bili.length + " ithome=" + ithome.length + " sspai=" + sspai.length + " ups=" + ups.length);
 }
 
 main().catch(function (e) { console.error(e); process.exit(1); });
