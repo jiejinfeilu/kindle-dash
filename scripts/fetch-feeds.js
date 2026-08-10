@@ -18,14 +18,18 @@ const RSSHUBS = [
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36";
 
-async function get(url) {
-  const res = await fetch(url, { headers: { "User-Agent": UA } });
+async function get(url, extraHeaders) {
+  const headers = { "User-Agent": UA };
+  if (extraHeaders) {
+    for (const k in extraHeaders) { headers[k] = extraHeaders[k]; }
+  }
+  const res = await fetch(url, { headers: headers });
   if (!res.ok) { throw new Error("HTTP " + res.status + " " + url); }
   return await res.text();
 }
 
-async function getJson(url) {
-  return JSON.parse(await get(url));
+async function getJson(url, extraHeaders) {
+  return JSON.parse(await get(url, extraHeaders));
 }
 
 function pick(arr, n) {
@@ -62,6 +66,11 @@ async function biliHot() {
 async function zhihuHot() {
   return trySources([
     {
+      url: "https://tenapi.cn/v2/zhihuhot",
+      pick: function (d) { return d.data || []; },
+      title: function (x) { return x.title; }
+    },
+    {
       url: "https://api.vvhan.com/api/hotlist/zhihuHot",
       pick: function (d) { return d.data || []; },
       title: function (x) { return x.title; }
@@ -82,6 +91,16 @@ async function zhihuHot() {
 async function weiboHot() {
   return trySources([
     {
+      url: "https://tenapi.cn/v2/weibohot",
+      pick: function (d) { return d.data || []; },
+      title: function (x) { return x.title; }
+    },
+    {
+      url: "https://weibo.com/ajax/side/hotSearch",
+      pick: function (d) { return (d.data && d.data.realtime) ? d.data.realtime : []; },
+      title: function (x) { return x.word; }
+    },
+    {
       url: "https://api.vvhan.com/api/hotlist/wbHot",
       pick: function (d) { return d.data || []; },
       title: function (x) { return x.title; }
@@ -91,11 +110,6 @@ async function weiboHot() {
       pick: function (d) { return d.data || []; },
       title: function (x) { return x.title; }
     },
-    {
-      url: "https://tenapi.cn/v2/weibohot",
-      pick: function (d) { return d.data || []; },
-      title: function (x) { return x.title; }
-    }
   ], 6);
 }
 
@@ -113,15 +127,28 @@ function parseRssTitles(txt, n) {
   return out;
 }
 
-async function upDynamic(uid) {
+async function upVideos(uid) {
+  // 优先用 B站官方接口直接抓UP主最新投稿
+  const apiUrls = [
+    "https://api.bilibili.com/x/space/arc/search?mid=" + uid + "&ps=6&pn=1&order=pubdate",
+    "https://api.bilibili.com/x/space/arc/search?mid=" + uid + "&ps=6&pn=1&order=click"
+  ];
+  const ref = { Referer: "https://space.bilibili.com/" + uid };
+  for (const u of apiUrls) {
+    try {
+      const d = await getJson(u, ref);
+      const vlist = (d.data && d.data.vlist) ? d.data.vlist : [];
+      const titles = pick(vlist, 4).map(function (x) { return x.title; }).filter(Boolean);
+      if (titles.length) { console.log("  ok up:", uid, "bilibili api"); return titles; }
+    } catch (e) { console.log("  fail up:", uid, "bilibili api", e.message); }
+  }
+  // 兜底：RSSHub 多实例
   for (const hub of RSSHUBS) {
-    for (const route of ["dynamic", "video"]) {
-      try {
-        const txt = await get(hub + "/bilibili/user/" + route + "/" + uid);
-        const titles = parseRssTitles(txt, 4);
-        if (titles.length) { console.log("  ok up:", uid, hub, route); return titles; }
-      } catch (e) { console.log("  fail up:", uid, hub, route, e.message); }
-    }
+    try {
+      const txt = await get(hub + "/bilibili/user/video/" + uid);
+      const titles = parseRssTitles(txt, 4);
+      if (titles.length) { console.log("  ok up rss:", uid, hub); return titles; }
+    } catch (e) { console.log("  fail up rss:", uid, hub, e.message); }
   }
   return [];
 }
@@ -155,7 +182,7 @@ async function main() {
   const ups = [];
   for (const u of UP_UIDS) {
     console.log("  up:", u.name);
-    const titles = await upDynamic(u.uid);
+    const titles = await upVideos(u.uid);
     if (titles.length) { ups.push({ name: u.name, titles: titles }); }
   }
 
