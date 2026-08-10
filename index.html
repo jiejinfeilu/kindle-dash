@@ -38,6 +38,15 @@
     padding-bottom: 4px;
     border-bottom: 2px solid #000;
   }
+  .fold-btn {
+    float: right;
+    font-size: 18px;
+    padding: 3px 12px;
+    margin-top: 2px;
+    border: 1px solid #666;
+    border-radius: 10px;
+    background: #fff;
+  }
   .p-body {
     font-size: 26px;
     line-height: 1.4;
@@ -509,6 +518,35 @@
     font-size: 18px;
     padding: 2px 8px;
   }
+
+  /* ===== v20 页面全屏模式（伪全屏）：隐藏页面自己的底栏和标题 ===== */
+  .fs-exit {
+    display: none;
+    position: fixed;
+    top: 4px;
+    right: 4px;
+    z-index: 999;
+    font-size: 20px;
+    padding: 6px 12px;
+    border: 1px solid #888;
+    border-radius: 12px;
+    background: #fff;
+  }
+  .fs .fs-exit {
+    display: block;
+  }
+  .fs .footer,
+  .fs #editPanel {
+    display: none !important;
+  }
+  .fs .panel h2 {
+    display: none;
+  }
+  .fs .panel {
+    border: none;
+    margin: 2px 4px;
+    padding: 2px 8px;
+  }
   .edit-row {
     font-size: 19px;
   }
@@ -557,14 +595,16 @@
 </div>
 
 <div class="footer">
-  缩放 <button onclick="zoomPage(-1)">−</button><span id="zoomLv">100%</span><button onclick="zoomPage(1)">+</button><button onclick="zoomReset()">100%</button> ｜ 版本 <span id="appVer">--</span> ｜ 上次更新 <span id="lastUpdate">--</span> ｜ 下次刷新 <span id="countdown">--</span> ｜ <span id="cloudStatus"></span> <button id="editBtn" onclick="toggleEdit()">编辑</button>
+  缩放 <button onclick="zoomPage(-1)">−</button><span id="zoomLv">100%</span><button onclick="zoomPage(1)">+</button><button onclick="zoomReset()">100%</button> ｜ 版本 <span id="appVer">--</span> ｜ 上次更新 <span id="lastUpdate">--</span> ｜ 下次刷新 <span id="countdown">--</span> ｜ <span id="cloudStatus"></span> <button onclick="toggleFs()">全屏</button> <button id="editBtn" onclick="toggleEdit()">编辑</button>
 </div>
+
+<button id="fsExit" class="fs-exit" onclick="toggleFs(false)">✦ 退出全屏</button>
 
 <script>
 /* ================================================================
    一、配置区（改这里即可，不需要动下面的代码）
    ================================================================ */
-var APP_VERSION = "v19-20260811";  // 页面版本号，上传后用来判断网页是否已更新
+var APP_VERSION = "v20-20260811";  // 页面版本号，上传后用来判断网页是否已更新
 
 var CONFIG = {
   refreshMs: 30 * 60 * 1000,   // 整页刷新间隔
@@ -848,8 +888,48 @@ function setBody(id, html) {
   if (el) { el.innerHTML = html; }
 }
 
-function panelHtml(title, body) {
-  return '<div class="panel"><h2>' + esc(title) + '</h2><div class="p-body">' + body + '</div></div>';
+function panelHtml(id, title, body) {
+  return '<div class="panel">' +
+         '<h2>' + esc(title) +
+         ' <button class="fold-btn" id="fold-' + id + '" onclick="toggleModule(\'' + id + '\')">收起</button>' +
+         '</h2>' +
+         '<div class="p-body" id="pw-' + id + '">' + body + '</div>' +
+         '</div>';
+}
+
+/* --- 模块收起/展开（状态保存在本机，刷新后仍保持） --- */
+var LS_FOLD = "kindle_dash_folded_v1";
+
+function readFold() {
+  try { return JSON.parse(localStorage.getItem(LS_FOLD) || "{}"); }
+  catch (e) { return {}; }
+}
+
+function writeFold(o) {
+  try { localStorage.setItem(LS_FOLD, JSON.stringify(o)); } catch (e) {}
+}
+
+function isFolded(id) {
+  return !!readFold()[id];
+}
+
+function toggleModule(id) {
+  var o = readFold();
+  o[id] = !o[id];
+  writeFold(o);
+  var w = $("pw-" + id);
+  var b = $("fold-" + id);
+  if (w) { w.style.display = o[id] ? "none" : ""; }
+  if (b) { b.textContent = o[id] ? "展开" : "收起"; }
+}
+
+function applyModuleState(id) {
+  var w = $("pw-" + id);
+  var b = $("fold-" + id);
+  if (!w) { return; }
+  var folded = isFolded(id);
+  w.style.display = folded ? "none" : "";
+  if (b) { b.textContent = folded ? "展开" : "收起"; }
 }
 
 /* ================================================================
@@ -1720,7 +1800,7 @@ function showCloud(msg) {
    ================================================================ */
 function renderModule(id) {
   var title = CONFIG.modules[id].title;
-  return panelHtml(title, '<div id="mod-' + id + '">加载中…</div>');
+  return panelHtml(id, title, '<div id="mod-' + id + '">加载中…</div>');
 }
 
 function dispatch(id) {
@@ -1755,7 +1835,10 @@ function buildGrid() {
   }
   html += '</table>';
   $("grid").innerHTML = html;
-  for (var k = 0; k < active.length; k++) { dispatch(active[k]); }
+  for (var k = 0; k < active.length; k++) {
+    dispatch(active[k]);
+    applyModuleState(active[k]);
+  }
 }
 
 /* ================================================================
@@ -1833,6 +1916,26 @@ function zoomReset() {
 }
 
 /* ================================================================
+   七之二、页面全屏模式（伪全屏）
+   说明：Kindle 自带的网址栏是系统界面，网页无法隐藏。
+   这里的“全屏”是隐藏页面自己的底栏、编辑按钮和模块标题，
+   让内容占满整屏，看起来更像屏保。退出按钮会出现在右上角。
+   ================================================================ */
+function toggleFs(on) {
+  var fs = (on === undefined) ? !(document.body.className.indexOf("fs") >= 0) : !!on;
+  if (fs) {
+    var de = document.documentElement;
+    if (de.requestFullscreen) { try { de.requestFullscreen(); } catch (e) {} }
+    else if (de.webkitRequestFullscreen) { try { de.webkitRequestFullscreen(); } catch (e) {} }
+  } else {
+    if (document.exitFullscreen) { try { document.exitFullscreen(); } catch (e) {} }
+    else if (document.webkitExitFullscreen) { try { document.webkitExitFullscreen(); } catch (e) {} }
+  }
+  document.body.className = fs ? "fs" : "";
+  try { localStorage.setItem("kindle_dash_fs", fs ? "1" : "0"); } catch (e) {}
+}
+
+/* ================================================================
    八、初始化
    ================================================================ */
 function init() {
@@ -1840,6 +1943,11 @@ function init() {
   $("lastUpdate").textContent = pad(now.getHours()) + ":" + pad(now.getMinutes());
   var v = $("appVer");
   if (v) { v.textContent = APP_VERSION; }
+  try {
+    if (localStorage.getItem("kindle_dash_fs") === "1") {
+      document.body.className = "fs";
+    }
+  } catch (e) {}
   try {
     var zs = parseInt(localStorage.getItem("kindle_dash_zoom"), 10);
     if (zs >= 60 && zs <= 200) { applyZoom(zs); }
