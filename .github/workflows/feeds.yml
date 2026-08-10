@@ -28,4 +28,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "chore: update hotlists"
-          file_pattern: data/feeds.json data/wallpaper.jpg
+          file_pattern: data/
