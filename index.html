@@ -445,7 +445,7 @@
 /* ================================================================
    一、配置区（改这里即可，不需要动下面的代码）
    ================================================================ */
-var APP_VERSION = "v11-20260810";  // 页面版本号，上传后用来判断网页是否已更新
+var APP_VERSION = "v13-20260810";  // 页面版本号，上传后用来判断网页是否已更新
 
 var CONFIG = {
   refreshMs: 30 * 60 * 1000,   // 整页刷新间隔
@@ -1024,6 +1024,53 @@ function extractTitles(src, data, limit) {
 }
 
 function renderFeeds() {
+  // 优先读取 GitHub Actions 生成的同源数据（无跨域问题）
+  xhrGet("data/feeds.json", function (err, txt) {
+    if (!err && txt) {
+      try {
+        var d = JSON.parse(txt);
+        renderFeedData(d);
+        return;
+      } catch (e) {}
+    }
+    renderFeedsOnline();
+  });
+}
+
+var LOCAL_FEEDS = null;
+
+function renderFeedData(d) {
+  LOCAL_FEEDS = d;
+  var blocks = [
+    { name: "B站热搜", titles: d.bili || [] },
+    { name: "知乎热榜", titles: d.zhihu || [] },
+    { name: "微博热搜", titles: d.weibo || [] }
+  ];
+  var ups = d.ups || [];
+  for (var i = 0; i < ups.length; i++) {
+    blocks.push({ name: ups[i].name, titles: ups[i].titles || [] });
+  }
+  var html = "";
+  for (var j = 0; j < blocks.length; j++) {
+    html += '<div class="cat">' + esc(blocks[j].name) + '</div>';
+    var titles = blocks[j].titles || [];
+    if (!titles.length) {
+      html += '<div class="news-item">（暂无内容）</div>';
+    } else {
+      for (var k = 0; k < Math.min(4, titles.length); k++) {
+        html += '<div class="news-item">' + esc(titles[k]) + '</div>';
+      }
+    }
+  }
+  var gen = d.generated || "";
+  if (gen) {
+    html += '<div class="tip">数据更新于 ' + esc(String(gen).replace("T", " ").substring(0, 16)) + '（GitHub Actions 定时抓取）</div>';
+  }
+  setBody("feeds", html);
+  if (CONFIG.modules.wallpaper && CONFIG.modules.wallpaper.on) { renderWallpaper(); }
+}
+
+function renderFeedsOnline() {
   var feeds = [];
   for (var i = 0; i < CONFIG.feeds.length; i++) { feeds.push(CONFIG.feeds[i]); }
   if (CONFIG.bilibiliUids && CONFIG.bilibiliUids.length) {
@@ -1303,28 +1350,26 @@ function todayStr() {
 }
 
 function renderWallpaper() {
-  var cached = getCookie("kindle_wall");
-  if (cached) {
-    var parts = cached.split("|");
-    if (parts.length === 2 && parts[0] === todayStr()) {
-      setBody("wallpaper", '<img class="wall" src="' + esc(parts[1]) + '"><div class="wall-cap">今日壁纸（已缓存）</div>');
-      return;
-    }
-  }
-  function showImg(url, cap) {
-    setCookie("kindle_wall", todayStr() + "|" + url);
-    setBody("wallpaper", '<img class="wall" src="' + esc(url) + '"><div class="wall-cap">' + esc(cap || "") + '</div>');
-  }
+  // 优先显示 GitHub Actions 每天下载的同源壁纸（data/wallpaper.jpg）
+  var cap = (LOCAL_FEEDS && LOCAL_FEEDS.wallpaperCaption) ? LOCAL_FEEDS.wallpaperCaption : "每日壁纸";
+  setBody("wallpaper",
+    '<img class="wall" src="data/wallpaper.jpg" onerror="wallFallback()" alt="壁纸">' +
+    '<div class="wall-cap">' + esc(cap) + '（GitHub 每日更新）</div>');
+}
+
+function wallFallback() {
   if (CONFIG.wallpaperUrl) {
-    showImg(CONFIG.wallpaperUrl, "自定义壁纸");
+    setBody("wallpaper", '<img class="wall" src="' + esc(CONFIG.wallpaperUrl) + '"><div class="wall-cap">自定义壁纸</div>');
     return;
   }
   var bingApi = "https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1";
   jsonViaProxies(bingApi, function (err, d) {
     if (!err && d && d.images && d.images[0]) {
-      showImg("https://www.bing.com" + d.images[0].url, d.images[0].copyright || "必应每日壁纸");
+      var u = "https://www.bing.com" + d.images[0].url;
+      setCookie("kindle_wall", todayStr() + "|" + u);
+      setBody("wallpaper", '<img class="wall" src="' + esc(u) + '"><div class="wall-cap">' + esc(d.images[0].copyright || "必应每日壁纸") + '</div>');
     } else {
-      showImg("https://bing.img.run/1920x1080.php", "Bing 壁纸直链（备选，加载慢请耐心等待）");
+      setBody("wallpaper", '<div class="err">壁纸暂不可用（可填 wallpaperUrl 图片直链）</div>');
     }
   });
 }
