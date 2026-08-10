@@ -76,15 +76,15 @@ async function main() {
   for (const u of UP_UIDS) {
     console.log("  up:", u.name);
     const titles = await upDynamic(u.uid);
-    if (titles.length) { ups.push({ name: u.name, titles: titles }); }    如果 (titles.长度) { ups.推送({ 名称: u.名称, titles: titles }); }
+    if (titles.length) { ups.push({ name: u.name, titles: titles }); }
   }
-  const out = {  常量 输出 = {
-    generated: new Date().toISOString(),    生成: 新的 日期().toISOString(),
-    bili: results[0],    比里: 结果[0],
-    zhihu: results[1],    知乎: 结果[1],
-    weibo: results[2],    微博: 结果[2],
+  const out = {
+    generated: new Date().toISOString(),
+    bili: results[0],
+    zhihu: results[1],
+    weibo: results[2],
     ups: ups,
-    wallpaperCaption: wallpaperCaption    壁纸标题: 壁纸标题
+    wallpaperCaption: wallpaperCaption
   };
   const dir = path.join(__dirname, "..", "data");
   fs.mkdirSync(dir, { recursive: true });
@@ -92,4 +92,4 @@ async function main() {
   console.log("stage 3/3: feeds.json + wallpaper.jpg written to", dir);
 }
 
-main().catch(function (e) { console.error(e); process.exit(1); });主().捕获(函数 (e) { 控制台.错误(e); 进程.退出(1); });
+main().catch(function (e) { console.error(e); process.exit(1); });
