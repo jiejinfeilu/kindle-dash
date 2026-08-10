@@ -413,6 +413,115 @@
     border: 1px solid #000;
     border-radius: 0;
   }
+
+  /* ===== v17 紧凑一屏模式（适配 Kindle 1072x1448 整屏显示） ===== */
+  body {
+    border-width: 6px;
+  }
+  .clock-panel {
+    padding: 8px 18px 6px;
+    border-bottom-width: 4px;
+  }
+  .clock-time {
+    font-size: 86px;
+  }
+  .clock-sec {
+    font-size: 26px;
+    padding: 1px 8px;
+  }
+  .clock-date {
+    font-size: 24px;
+  }
+  .clock-greet {
+    font-size: 18px;
+  }
+  table.grid {
+    border-spacing: 8px;
+  }
+  .panel {
+    padding: 8px 12px 10px;
+    min-height: 170px;
+  }
+  .panel h2 {
+    font-size: 22px;
+    padding: 0 0 4px 8px;
+    margin-bottom: 5px;
+  }
+  .p-body {
+    font-size: 20px;
+    line-height: 1.35;
+  }
+  .w-main {
+    font-size: 30px;
+  }
+  .w-sub {
+    font-size: 19px;
+  }
+  .w-fc {
+    font-size: 18px;
+    line-height: 1.35;
+  }
+  .cat {
+    font-size: 18px;
+    padding: 1px 6px;
+    margin-top: 5px;
+  }
+  .news-item {
+    font-size: 18px;
+    padding: 1px 6px;
+    margin: 2px 0;
+  }
+  table.t {
+    font-size: 19px;
+  }
+  table.t td {
+    padding: 3px 5px;
+  }
+  .count-item {
+    font-size: 20px;
+    padding: 3px 0;
+  }
+  .count-days {
+    font-size: 24px;
+  }
+  .todo-item {
+    font-size: 19px;
+    padding: 2px 0;
+  }
+  .bar {
+    font-size: 17px;
+  }
+  .quote-box {
+    font-size: 22px;
+    padding: 8px 4px;
+  }
+  img.wall {
+    max-height: 150px;
+  }
+  .wall-cap {
+    font-size: 16px;
+  }
+  .footer {
+    font-size: 16px;
+    padding: 4px 12px 8px;
+  }
+  button {
+    font-size: 18px;
+    padding: 2px 8px;
+  }
+  .edit-row {
+    font-size: 19px;
+  }
+  .edit-row input {
+    font-size: 18px;
+    width: 200px;
+  }
+  .tip {
+    font-size: 15px;
+  }
+  .err {
+    font-size: 16px;
+  }
 </style>
 </head>
 <body>
@@ -445,7 +554,7 @@
 /* ================================================================
    一、配置区（改这里即可，不需要动下面的代码）
    ================================================================ */
-var APP_VERSION = "v16-20260810";  // 页面版本号，上传后用来判断网页是否已更新
+var APP_VERSION = "v17-20260810";  // 页面版本号，上传后用来判断网页是否已更新
 
 var CONFIG = {
   refreshMs: 30 * 60 * 1000,   // 整页刷新间隔
@@ -1057,7 +1166,7 @@ function renderFeedData(d) {
     if (!titles.length) {
       html += '<div class="news-item">（暂无内容）</div>';
     } else {
-      for (var k = 0; k < Math.min(4, titles.length); k++) {
+      for (var k = 0; k < Math.min(3, titles.length); k++) {
         html += '<div class="news-item">' + esc(titles[k]) + '</div>';
       }
     }
