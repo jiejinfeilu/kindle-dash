@@ -434,6 +434,7 @@
     <button onclick="toggleEdit(false)">取消</button>
   </div>
   <div class="tip">保存后只在这台设备的浏览器里生效；清除浏览器缓存会恢复成文件里的配置。</div>
+  <div id="syncStatus" class="tip"></div>
 </div>
 
 <div class="footer">
@@ -444,7 +445,7 @@
 /* ================================================================
    一、配置区（改这里即可，不需要动下面的代码）
    ================================================================ */
-var APP_VERSION = "v9-20260810";   // 页面版本号，上传后用来判断网页是否已更新
+var APP_VERSION = "v11-20260810";  // 页面版本号，上传后用来判断网页是否已更新
 
 var CONFIG = {
   refreshMs: 30 * 60 * 1000,   // 整页刷新间隔
@@ -496,18 +497,21 @@ var CONFIG = {
     { name: "B站热搜", type: "json",
       count: 4,
       sources: [
+        { url: "https://api-hot.imsyy.top/bilibili", listPath: "data", titleKey: "title" },
         { url: "https://tenapi.cn/v2/bilihot", listPath: "data", titleKey: "title" },
         { url: "https://api.bilibili.com/x/web-interface/search/square?limit=10", listPath: "data.trending.list", titleKey: "keyword" }
       ] },
     { name: "知乎热榜", type: "json",
       count: 4,
       sources: [
+        { url: "https://api-hot.imsyy.top/zhihu", listPath: "data", titleKey: "title" },
         { url: "https://tenapi.cn/v2/zhihuhot", listPath: "data", titleKey: "title" },
         { url: "https://api.vvhan.com/api/hotlist/zhihuHot", listPath: "data", titleKey: "title" }
       ] },
     { name: "微博热搜", type: "json",
       count: 4,
       sources: [
+        { url: "https://api-hot.imsyy.top/weibo", listPath: "data", titleKey: "title" },
         { url: "https://tenapi.cn/v2/weibohot", listPath: "data", titleKey: "title" },
         { url: "https://api.vvhan.com/api/hotlist/wbHot", listPath: "data", titleKey: "title" }
       ] }
@@ -1039,17 +1043,22 @@ function renderFeeds() {
   var done = 0;
   function finishAll() {
     var html = "";
+    var anyOk = false;
     for (var i = 0; i < feeds.length; i++) {
       var titles = results[i] || [];
       html += '<div class="cat">' + esc(feeds[i].name) + '</div>';
       if (!titles.length) {
         html += '<div class="news-item">（暂无内容或加载失败）</div>';
       } else {
+        anyOk = true;
         var limit = Math.min(titles.length, feeds[i].count || 3);
         for (var j = 0; j < limit; j++) {
           html += '<div class="news-item">' + esc(titles[j]) + '</div>';
         }
       }
+    }
+    if (!anyOk) {
+      html += '<div class="tip">（所有内容源当前均不可达：可在配置 proxies 中添加可用的代理地址）</div>';
     }
     setBody("feeds", html);
   }
@@ -1433,7 +1442,7 @@ function resetEdits() {
 /* --- 多设备同步（jsonblob，无需注册，国内一般可访问） --- */
 function jbId() {
   var c = CONFIG.jsonblob;
-  return (c && c.blobId) ? c.blobId : "";
+  return (c && c.blobId) ? String(c.blobId).trim() : "";
 }
 
 function jbRequest(method, url, body, done) {
@@ -1454,11 +1463,13 @@ function jbRequest(method, url, body, done) {
 
 function ghPush(cb) {
   var g = CONFIG.github;
+  var gid = String(g.gistId).trim();
+  var tok = String(g.token).trim();
   var content = JSON.stringify({ countdowns: loadCountdowns(), todos: loadTodos() });
   var body = JSON.stringify({ files: { "kindle-dash.json": { content: content } } });
   var xhr = new XMLHttpRequest();
-  xhr.open("PATCH", "https://api.github.com/gists/" + g.gistId, true);
-  xhr.setRequestHeader("Authorization", "token " + g.token);
+  xhr.open("PATCH", "https://api.github.com/gists/" + gid, true);
+  xhr.setRequestHeader("Authorization", "token " + tok);
   xhr.setRequestHeader("Accept", "application/vnd.github+json");
   xhr.setRequestHeader("Content-Type", "application/json");
   xhr.timeout = 15000;
@@ -1475,9 +1486,11 @@ function ghPush(cb) {
 
 function ghPull(cb) {
   var g = CONFIG.github;
+  var gid = String(g.gistId).trim();
+  var tok = String(g.token).trim();
   var xhr = new XMLHttpRequest();
-  xhr.open("GET", "https://api.github.com/gists/" + g.gistId, true);
-  if (g.token) { xhr.setRequestHeader("Authorization", "token " + g.token); }
+  xhr.open("GET", "https://api.github.com/gists/" + gid, true);
+  if (tok) { xhr.setRequestHeader("Authorization", "token " + tok); }
   xhr.setRequestHeader("Accept", "application/vnd.github+json");
   xhr.timeout = 15000;
   xhr.onreadystatechange = function () {
@@ -1531,6 +1544,8 @@ function cloudPull(cb) {
 function showCloud(msg) {
   var st = $("cloudStatus");
   if (st) { st.textContent = msg || ""; }
+  var sp = $("syncStatus");
+  if (sp) { sp.textContent = msg || ""; }
 }
 
 /* ================================================================
@@ -1609,11 +1624,13 @@ function init() {
   tick();
   if (CONFIG.modules.clock && !CONFIG.modules.clock.on) { $("clockBox").innerHTML = ""; }
   cloudPull(function (err, msg) {
-    if (err) { showCloud("云端同步失败"); }
+    if (err) { showCloud("云端读取失败：" + (err.message || "") + "（编辑仍可用）"); }
     else if (msg) {
       renderCountdown();
       renderTodo();
       showCloud(msg);
+    } else {
+      showCloud("云端就绪（首次保存后开始同步）");
     }
   });
 }
