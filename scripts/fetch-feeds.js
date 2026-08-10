@@ -58,7 +58,9 @@ async function bingWallpaper() {
     const res = await fetch(url);
     if (!res.ok) { return ""; }
     const buf = Buffer.from(await res.arrayBuffer());
-    fs.writeFileSync(path.join(__dirname, "..", "data", "wallpaper.jpg"), buf);
+    const wallDir = path.join(__dirname, "..", "data");
+    fs.mkdirSync(wallDir, { recursive: true });
+    fs.writeFileSync(path.join(wallDir, "wallpaper.jpg"), buf);
     return img.copyright || "";
   } catch (e) { return ""; }
 }
