@@ -445,7 +445,7 @@
 /* ================================================================
    一、配置区（改这里即可，不需要动下面的代码）
    ================================================================ */
-var APP_VERSION = "v15-20260810";  // 页面版本号，上传后用来判断网页是否已更新
+var APP_VERSION = "v16-20260810";  // 页面版本号，上传后用来判断网页是否已更新
 
 var CONFIG = {
   refreshMs: 30 * 60 * 1000,   // 整页刷新间隔
@@ -567,7 +567,7 @@ var CONFIG = {
      打开页面自动读取。若保存时底部显示“云端同步失败”，说明当前网络
      访问不了 jsonblob，跳过即可（编辑仍保存在本机浏览器）。 */
   jsonblob: {
-    blobId: "kddash-8f3a2c1e9b47d605"
+    blobId: ""
   },
 
   /* --- GitHub Gist 同步（推荐，国内可访问，用你已有的 GitHub 账号）---
@@ -578,8 +578,8 @@ var CONFIG = {
         Tokens (classic) → Generate new token → 只勾选 gist 权限 → 复制 token
      4) 填到下面。填了 github 就优先用它同步，jsonblob 作备选。 */
   github: {
-    gistId: "4796e49a0e69fb88c88f2b12eb01e140",
-    token: "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"
+    gistId: "",
+    token: ""
   },
 
   /* --- 每日一图：留空用必应每日壁纸，或填任意图片直链 --- */
@@ -1461,9 +1461,11 @@ function saveEdits() {
   cloudPush(function (err, msg) {
     if (err) {
       var g = CONFIG.github;
-      showCloud(g && g.gistId && g.token ? ("云端同步失败：" + (err.message || "") + "，请检查网络或 token") : "云端同步失败（未配置 GitHub Gist，编辑已存本机）");
+      var jb = CONFIG.jsonblob;
+      var anyCfg = (g && g.gistId && g.token) || (jb && jb.blobId);
+      showCloud(anyCfg ? ("云端同步失败：" + (err.message || "") + "，编辑已存本机") : "已保存到本机（云端同步未配置）");
     } else {
-      showCloud(msg);
+      showCloud(msg || "已保存到本机（云端同步未配置）");
     }
   });
 }
@@ -1480,7 +1482,7 @@ function resetEdits() {
   renderTodo();
   cloudPush(function (err, msg) {
     if (err) { showCloud("云端同步失败（编辑已存本机）"); }
-    else { showCloud(msg); }
+    else { showCloud(msg || "已保存到本机（云端同步未配置）"); }
   });
 }
 
@@ -1675,7 +1677,9 @@ function init() {
       renderTodo();
       showCloud(msg);
     } else {
-      showCloud("云端就绪（首次保存后开始同步）");
+      var g = CONFIG.github;
+      var jb = CONFIG.jsonblob;
+      showCloud((g && g.gistId) || (jb && jb.blobId) ? "云端就绪（首次保存后开始同步）" : "云端同步未配置，编辑保存在本机");
     }
   });
 }

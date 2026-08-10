@@ -125,7 +125,31 @@ async function getBuvid() {
   } catch (e) { console.log("  fail buvid:", e.message); }
 }
 
-async function upVideos(uid) {
+function stripTags(s) {
+  return String(s).replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").trim();
+}
+
+async function upVideosBySearch(name) {
+  try {
+    const url = "https://api.bilibili.com/x/web-interface/search/type?search_type=video&order=pubdate&page=1&keyword=" + encodeURIComponent(name);
+    const d = await getJson(url, { Referer: "https://search.bilibili.com/" });
+    const list = (d.data && d.data.result) ? d.data.result : [];
+    const out = [];
+    for (const v of list) {
+      if (out.length >= 4) { break; }
+      const author = v.author || "";
+      if (author && (author.indexOf(name) >= 0 || name.indexOf(author) >= 0)) {
+        const t = stripTags(v.title);
+        if (t) { out.push(t); }
+      }
+    }
+    if (out.length) { console.log("  ok up search:", name); return out; }
+    console.log("  empty up search:", name);
+  } catch (e) { console.log("  fail up search:", name, e.message); }
+  return [];
+}
+
+async function upVideos(uid, name) {
   try {
     if (!BUV) { await getBuvid(); }
     const mixinKey = await getWbiKeys();
@@ -150,7 +174,7 @@ async function upVideos(uid) {
       if (titles.length) { console.log("  ok up rss:", uid, hub); return titles; }
     } catch (e) { console.log("  fail up rss:", uid, hub, e.message); }
   }
-  return [];
+  return upVideosBySearch(name);
 }
 
 async function bingWallpaper() {
@@ -182,7 +206,7 @@ async function main() {
   const ups = [];
   for (const u of UP_UIDS) {
     console.log("  up:", u.name);
-    const titles = await upVideos(u.uid);
+    const titles = await upVideos(u.uid, u.name);
     if (titles.length) { ups.push({ name: u.name, titles: titles }); }
   }
 
