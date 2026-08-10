@@ -71,13 +71,22 @@
 
 ## 二、部署（重新上传）
 
-1. 打开 `index.html` 填好配置后保存。
-2. 上传覆盖到 GitHub 仓库：
-   - 网页方式：仓库页面 → Add file → Upload files → 选择本机 `index.html` → Commit changes。
-   - 命令行：`git add index.html` → `git commit -m "update dashboard v3"` → `git push`。
-3. 无需任何设置，等 1~3 分钟 Pages 自动更新。
-4. 电脑打开 `https://你的用户名.github.io/kindle-dash/` 验证。
-5. Kindle 浏览器若显示旧页面：浏览器菜单里清缓存后重新打开。
+从 v12 开始，内容源改为 **GitHub Actions 定时抓取**（在 GitHub 服务器上抓热榜，写入 data/feeds.json），页面只读同源 JSON，**不再依赖浏览器跨域和代理**，Kindle 也能稳定显示。
+
+需要上传的文件（共 3 个，保持目录结构）：
+
+- `index.html`（覆盖旧的）
+- `.github/workflows/feeds.yml`（新建）
+- `scripts/fetch-feeds.js`（新建）
+
+上传方法（网页方式）：
+
+1. 仓库页面 → Add file → Upload files → 把 `index.html` 拖进去上传覆盖。
+2. 再点 Add file → **Create new file**，文件名输入 `.github/workflows/feeds.yml`，把本机该文件的内容粘贴进去 → Commit。同样方式新建 `scripts/fetch-feeds.js`。
+3. 等 1~3 分钟 Pages 更新后，进仓库 **Actions** 标签 → 左侧 “Fetch hotlists” → 点 **Run workflow** → 绿色 Run，手动触发第一次抓取。
+4. 抓取完成后（Actions 变绿勾），页面会自动显示热榜、UP主动态和**每日壁纸**（壁纸也由 Actions 每天下载到 data/wallpaper.jpg，页面读同源图片，不再依赖外站图源）；之后每 30 分钟自动更新一次。
+
+电脑打开 `https://你的用户名.github.io/kindle-dash/` 验证；Kindle 浏览器若显示旧页面：清缓存后重新打开。
 
 ## 三、Kindle 访问与常亮
 
@@ -122,7 +131,9 @@ GitHub Pages 是静态托管，网页里的 JavaScript 没有权限写你的仓�
 - **页面超出一屏**：把某个模块的 `on` 改成 `false`。
 - **天气报错**：国内优先用和风天气（填 `qweatherKey` + 城市 ID）；新 Key 需要等待激活；若坚持 OpenWeather，确认 Key 完整、`city` 用英文拼音、网络能访问 openweathermap.org。
 - **本地直接双击 index.html 打开时接口全部失败**：浏览器安全策略会拦截跨域请求，属正常。本地测试请在文件所在文件夹的终端运行 `python -m http.server 8000`（启动一个本地测试服务器），然后访问 `http://localhost:8000`；正式使用以 GitHub Pages 的 https 网址为准。
-- **上传后打开还是旧版本**：先看页面底部“版本”是否显示 `v9-20260810`。若不是：① 电脑上按 Ctrl+F5 强制刷新，或网址后面加 `?v=1` 打开；② 等 2~3 分钟让 Pages 更新；③ 确认仓库里 index.html 在根目录、提交时间是刚刚；④ Kindle 上清浏览器缓存后再开。新版每 30 分钟自动刷新时会自动带新参数绕过缓存。
+- **上传后打开还是旧版本**：先看页面底部“版本”是否显示 `v13-20260810`。若不是：① 电脑上按 Ctrl+F5 强制刷新，或网址后面加 `?v=1` 打开；② 等 2~3 分钟让 Pages 更新；③ 确认仓库里 index.html 在根目录、提交时间是刚刚；④ Kindle 上清浏览器缓存后再开。新版每 30 分钟自动刷新时会自动带新参数绕过缓存。
+- **云端同步显示 HTTP 401**：401 说明网络通、但 token 无效。请重新生成：GitHub → Settings → Developer settings → Personal access tokens → **Tokens (classic)** → Generate new token (classic) → **只勾选 `gist`** → 生成后完整复制（`ghp_` 开头、不要带空格），填回 `github.token` 重新上传。不要用“fine-grained”令牌。
+- **内容源显示“暂无内容”**：先确认仓库 Actions 里的 “Fetch hotlists” 是否运行成功（绿勾）。首次需手动 Run workflow；之后每 30 分钟自动跑。
 
 ## 六、验证清单
 
