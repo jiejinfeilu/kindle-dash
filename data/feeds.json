@@ -1,15 +1,15 @@
 {
-  "generated": "2026-08-13T21:47:54.095Z",
+  "generated": "2026-08-13T22:44:18.335Z",
   "bili": [
-    "最后离开的人赢百万豪宅",
-    "DeepSeek API确认涨价",
+    "俄罗斯历史课本里的中国",
+    "中美模型蒸馏之争出现新论据",
+    "BLG战胜TT赛后数据",
     "德比斯羡慕中国车手",
-    "TT BLG",
-    "DeepSeek Harness发布",
-    "中美模型蒸馏之争出现新论据"
+    "DeepSeek官方Agent发布",
+    "当李蠕蠕模仿我的前半生"
   ],
   "ithome": [
-    "法拉第未来 2026 财年半年报归母亏损 7488.5 万美元，同比扭亏为盈",
+    "法拉第未来 2026 财年半年报归母亏损 7488.5 万美元，同比亏损收窄 44.51%",
     "英伟达 GeForce NOW 原生 Linux 应用发布：结束 Beta 测试，支持 Ubuntu 24.04 及 Flatpak 安装",
     "全球最大电池纯电动飞机 Heart Aerospace X1 完成首飞：超 1 兆瓦功率输出 + 超 11 吨起飞重量",
     "澳大利亚青少年社媒禁令上路半年间，Meta 清理 75.6 万个疑似未成年账户",
@@ -24,6 +24,22 @@
     "派早报：荣耀发布 Robot Phone、Google 推出 Pixel 11 系列等",
     "把「闪念胶囊」（Almost）放到 iPhone 锁屏"
   ],
-  "ups": [],
+  "ups": [
+    {
+      "name": "极客湾Geekerwan",
+      "titles": [
+        "极客湾手机续航大横评：电池锁容？电量缩水？谁在浑水摸鱼？"
+      ]
+    },
+    {
+      "name": "FUN科技",
+      "titles": [
+        "现在最值得买的笔记本电脑是什么？不同大学专业怎么选笔记本？2026年8月暑期笔记本电脑推荐选购指南",
+        "只要1199元！540Hz的三模显示器，好用么？飞利浦 EVNIA 弈威 27M4N5500PT 电竞显示器上手体验",
+        "塞入满血DeepSeek V4 Flash：无限Token！两台英伟达电脑“交火”，有多强？?MSI EdgeXpert(DGXSpark)双机实测",
+        "【教程】电视卡顿怎么办？从系统清理、去广告到外接电视盒子 PC 串流，四种方法让它重获新生：旧电视优化升级指南"
+      ]
+    }
+  ],
   "wallpaperCaption": "Perseid meteors over Teide Observatory, Tenerife, Spain (© Westend61/Getty Images)"
 }
