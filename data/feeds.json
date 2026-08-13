@@ -1,12 +1,12 @@
 {
-  "generated": "2026-08-13T17:07:52.707Z",
+  "generated": "2026-08-13T18:29:21.656Z",
   "bili": [
     "TT BLG",
     "俄罗斯历史课本里的中国",
-    "DeepSeek API确认涨价",
     "德比斯羡慕中国车手",
-    "DeepSeek Harness发布",
-    "跟着TXT乱闯上海"
+    "DeepSeek API确认涨价",
+    "最后离开的人赢百万豪宅",
+    "臣妾要线上告发熹贵妃"
   ],
   "ithome": [
     "英伟达 GeForce NOW 原生 Linux 应用发布：结束 Beta 测试，支持 Ubuntu 24.04 及 Flatpak 安装",
@@ -24,6 +24,31 @@
     "派早报：荣耀发布 Robot Phone、Google 推出 Pixel 11 系列等",
     "把「闪念胶囊」（Almost）放到 iPhone 锁屏"
   ],
-  "ups": [],
+  "ups": [
+    {
+      "name": "极客湾Geekerwan",
+      "titles": [
+        "极客湾手机续航大横评：电池锁容？电量缩水？谁在浑水摸鱼？"
+      ]
+    },
+    {
+      "name": "谈三圈",
+      "titles": [
+        "比草履虫还小的广告是谁做的？我在阿斯麦，学造光刻机",
+        "什么是电机驱动芯片？汽车电子科普",
+        "拆解2纳米芯片：先进封装与背部供电深度解读",
+        "不止算力与存储：电力是AI芯片的下一个瓶颈？"
+      ]
+    },
+    {
+      "name": "一网一匠",
+      "titles": [
+        "你根本无法想象，从网站设计到开发上线，有多简单",
+        "iPhone上最被低估的设置应用，藏了各种夯到爆的功能",
+        "国家给所有人准备的APP，里面藏着一堆神器？",
+        "我在微信里养了一只龙虾，震惊得我一愣一愣的"
+      ]
+    }
+  ],
   "wallpaperCaption": "Perseid meteors over Teide Observatory, Tenerife, Spain (© Westend61/Getty Images)"
 }
